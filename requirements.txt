@@ -1,0 +1,36 @@
+# Server
+fastapi
+uvicorn
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# Auth & Security
+python-jose
+passlib[bcrypt]
+argon2-cffi
+python-dotenv
+fastapi-mail
+
+# Validation
+pydantic[email]
+pydantic>=2.7.4,<3.0.0
+
+# LangChain
+langchain==0.3.27
+langchain-community==0.3.31
+langchain-core==0.3.83
+langchain-text-splitters==0.3.9
+langchain-pinecone==0.2.13
+langchain-huggingface==0.1.2
+
+# Vector DB
+pinecone[grpc]==7.3.0
+
+# LLM API
+groq==0.13.0
+
+# Embeddings
+huggingface-hub>=0.19.0
+sentence-transformers>=2.2.0

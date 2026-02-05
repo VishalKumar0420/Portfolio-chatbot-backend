@@ -1,0 +1,78 @@
+# app/core/security.py
+
+from datetime import datetime, timedelta, timezone
+from fastapi import HTTPException
+from jose import JWTError, jwt
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
+from app.core.config.setting import settings
+
+
+# -------------------------------
+# Password hashing with Argon2
+# -------------------------------
+ph = PasswordHasher()
+
+
+def hash_password(password: str) -> str:
+    return ph.hash(password)
+
+# -------------------------------
+# Password verifying
+# -------------------------------
+
+def verify_password(password: str, hashed: str) -> bool:
+
+    try:
+        return ph.verify(hashed, password)
+    except VerifyMismatchError:
+        return False
+
+
+# -------------------------------------------
+# JWT Token handling and creating access token
+# -------------------------------------------
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
+
+# -------------------------------
+# creating refresh token
+# -------------------------------
+
+def create_refresh_token(data: dict) -> str:
+    payload = data.copy()
+    payload.update(
+        {
+            "exp": datetime.now(timezone.utc)
+            + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+            "type": "refresh",
+        }
+    )
+
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+# -------------------------------
+# decode  token
+# -------------------------------
+
+def decode_token(token: str, expected_type: str) -> dict:
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+
+        if payload.get("type") != expected_type:
+            raise HTTPException(status_code=401, detail="Invalid token type")
+
+        return payload
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
