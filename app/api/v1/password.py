@@ -3,13 +3,13 @@ from fastapi import APIRouter, Body, Depends
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.api.v1.otp import send_otp
-from app.core.constants import OTP_PURPOSE_PASSWORD_RESET
-from app.db.session import get_db
+from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
+from app.core.db.session import get_db
 from app.models.otp import OTP
 from app.models.user import User
 from app.schemas.otp import OTP_Request
 from app.services.otp_service import create_user_otp, send_otp_email
-from app.core.security import hash_password
+from app.core.config.security import hash_password
 
 router = APIRouter(prefix="/password", tags=["PASSWORD"])
 

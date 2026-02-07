@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from app.schemas.chat import ChatDelete, ChatInput, ChatQuery
-from app.services.chat import add_chat_content, delete_chat_content, search_chat_content
+from app.services.chat_service import add_chat_content, delete_chat_content, search_chat_content
 
 
 router = APIRouter(prefix="/chat", tags=["CHAT"])

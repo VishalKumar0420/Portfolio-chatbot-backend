@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.core.constants import OTP_PURPOSE_LOGIN
-from app.db.session import get_db
+from app.core.config.constants import OTP_PURPOSE_LOGIN
+from app.core.db.session import get_db
 from app.models.otp import OTP
 from app.models.user import User
 from app.schemas.otp import OTP_Request

@@ -2,8 +2,8 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from app.db.base import Base
-from app.db.session import engine
+from app.core.db.base import Base
+from app.core.db.session import engine
 from app.api.v1.auth import router as auth_router
 from app.api.v1.otp import router as otp_router
 from app.api.v1.password import router as password_router

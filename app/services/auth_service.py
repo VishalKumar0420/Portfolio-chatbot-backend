@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta, timezone
-import os
 from uuid import uuid4
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from app.core.security import (
+from app.core.config.security import (
     create_access_token,
     create_refresh_token,
     decode_token,

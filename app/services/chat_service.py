@@ -1,14 +1,14 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.shares import call_groq_llm, detect_sections, normalize_text, preprocess_query, split_large_section
-from app.core.config.pinecone import vectorstore
 from data import TOP_K, VECTOR_K
+from app.core.vectorstore.pinecone_store import _vectorstore
 
 
 
 # Delete all data for a specific chat_id from vector store
 def delete_chat_content(chat_id: str):
     try:
-        from app.core.config.pinecone import index
+        from app.core.vectorstore.pinecone_store import index
 
         # Delete all vectors with this chat_id using filter
         delete_response = index.delete(filter={"chat_id": chat_id})
@@ -19,7 +19,7 @@ def delete_chat_content(chat_id: str):
     except Exception as e:
         print(f"Error deleting chat content for {chat_id}: {e}")
         try:
-            results = vectorstore.similarity_search(
+            results = _vectorstore.similarity_search(
                 query="dummy", k=1000, filter={"chat_id": chat_id}
             )
 

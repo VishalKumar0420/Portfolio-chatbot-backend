@@ -1,7 +1,7 @@
 import time
 import re
 from groq import Groq
-from app.core.config.llm import client
+from app.core.llm.groq_client import client
 
 # ==============================
 # Simple rate limiting

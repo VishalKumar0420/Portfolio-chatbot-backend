@@ -1,9 +1,9 @@
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from app.db.base import Base
 from datetime import datetime, timezone
 from sqlalchemy.orm import relationship
+from app.core.db.base import Base
 
 
 class RefreshToken(Base):

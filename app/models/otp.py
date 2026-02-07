@@ -1,9 +1,10 @@
-from app.db.base import Base
 from sqlalchemy import Column, ForeignKey, String, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 import uuid
+
+from app.core.db.base import Base
 
 
 class OTP(Base):
