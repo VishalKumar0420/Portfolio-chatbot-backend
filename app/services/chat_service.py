@@ -1,12 +1,8 @@
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.shares import call_groq_llm, detect_sections, normalize_text, preprocess_query, split_large_section
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.core.config.pinecone import vectorstore
 from data import TOP_K, VECTOR_K
-# from src.shares.normalize_text import normalize_text
-# from src.shares.split_large_section import split_large_section
-# from src.shares.detect_sections import detect_sections
-# from src.shares.call_groq_llm import call_groq_llm
-# from src.shares.preprocess_query import preprocess_query
+
 
 
 # Delete all data for a specific chat_id from vector store

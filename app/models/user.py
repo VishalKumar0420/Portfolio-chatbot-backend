@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, String,Enum
+from sqlalchemy import Column,String,Enum
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 from sqlalchemy.dialects.postgresql import UUID
