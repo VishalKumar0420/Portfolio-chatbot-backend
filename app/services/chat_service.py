@@ -34,7 +34,7 @@ def delete_chat_content(chat_id: str):
                     ids_to_delete.append(doc_id)
 
                 if ids_to_delete:
-                    vectorstore.delete(ids_to_delete)
+                    _vectorstore.delete(ids_to_delete)
                     print(
                         f"Fallback: Deleted {len(ids_to_delete)} documents for chat_id: {chat_id}"
                     )
@@ -81,7 +81,7 @@ def add_chat_content(chat_id: str, chat_name: str, content: dict):
                 )
 
     if texts:
-        vectorstore.add_texts(texts, metadatas, ids)
+        _vectorstore.add_texts(texts, metadatas, ids)
         print(f"Added {len(texts)} new chunks for chat_id: {chat_id}")
     else:
         print(f"No valid content to add for chat_id: {chat_id}")
@@ -92,7 +92,7 @@ def search_chat_content(chat_id: str, query: str):
 
     inferred_sections = detect_sections(processed_query_text)
 
-    results = vectorstore.similarity_search_with_score(
+    results = _vectorstore.similarity_search_with_score(
         query=processed_query_text, k=VECTOR_K, filter={"chat_id": chat_id}
     )
 

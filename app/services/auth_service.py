@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
+from fastapi import BackgroundTasks, HTTPException, status
+from app.core.config.constants import OTP_PURPOSE_LOGIN
 from app.core.config.security import (
     create_access_token,
     create_refresh_token,
@@ -16,13 +17,20 @@ from app.schemas.token import TokenResponse
 from app.schemas.user import UserCreate, UserLogin
 from passlib.context import CryptContext
 from app.core.config.setting import settings
+from app.services.otp_service import create_user_otp, send_otp_email
 
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # signup
 
-def signup(db: Session, data:UserCreate):
+
+def signup(
+    db: Session,
+    data: UserCreate,
+    background_tasks: BackgroundTasks,
+    purpose: str = OTP_PURPOSE_LOGIN,
+):
     existing_user = db.query(User).filter(User.email == data.email).first()
     if existing_user:
         raise HTTPException(
@@ -38,21 +46,23 @@ def signup(db: Session, data:UserCreate):
     db.add(user)
     db.commit()
     db.refresh(user)
+    otp = create_user_otp(user.id, db, purpose=purpose)
+    background_tasks.add_task(send_otp_email, user.email, otp.code)
     return user
 
-def login(db:Session,data:UserLogin):
+
+def login(db: Session, data: UserLogin):
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+        )
+
     access_token, refresh_token = issue_tokens(str(user.id), user.email, db)
 
     return TokenResponse(
-        access_token=access_token, 
-        refresh_token=refresh_token,
-        token_type="bearer"
+        access_token=access_token, refresh_token=refresh_token, token_type="bearer"
     )
-
 
 
 def issue_tokens(user_id: str, email: str, db: Session):
@@ -66,21 +76,21 @@ def issue_tokens(user_id: str, email: str, db: Session):
     db_token = RefreshToken(
         user_id=user_id,
         token=token_hash,
-        expires_at=datetime.now(timezone.utc) + timedelta(
-            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-        )
+        expires_at=datetime.now(timezone.utc)
+        + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
     db.add(db_token)
     db.commit()
 
     return access_token, refresh_token
 
+
 def rotate_refresh_token(refresh_token: str, db: Session):
     payload = decode_token(refresh_token, "refresh")
 
-    db_tokens = db.query(RefreshToken).filter(
-        RefreshToken.user_id == payload["sub"]
-    ).all()
+    db_tokens = (
+        db.query(RefreshToken).filter(RefreshToken.user_id == payload["sub"]).all()
+    )
 
     valid_token = None
     for t in db_tokens:

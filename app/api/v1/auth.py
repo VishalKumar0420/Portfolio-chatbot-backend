@@ -6,13 +6,14 @@ from app.models.user import User
 from app.schemas.token import TokenResponse
 from app.schemas.user import UserCreate, UserLogin
 from app.services.auth_service import login, rotate_refresh_token, signup
+from fastapi import BackgroundTasks
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @router.post("/signup", operation_id="signup")
-def user_signup(data: UserCreate, db: Session = Depends(get_db)):
-    return signup(db, data)
+async def user_signup(data: UserCreate,background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    return signup(db,data,background_tasks)
 
 
 @router.post("/login", response_model=TokenResponse)
