@@ -17,6 +17,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://portfolio-chatbot-omega-one.vercel.app/",
+        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
