@@ -40,7 +40,7 @@ def signup(
         name=data.name,
         email=data.email,
         password=hash_password(data.password),
-        role=RoleEnum.user,
+        # role=RoleEnum.user,
     )
 
     db.add(user)

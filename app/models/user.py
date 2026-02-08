@@ -17,7 +17,7 @@ class User(Base):
     name = Column(String,nullable=False)
     email = Column(String, unique=True,nullable=False)
     password = Column(String,nullable=False)
-    role=Column(Enum(RoleEnum),default=RoleEnum.user,nullable=False)
+    # role=Column(Enum(RoleEnum),default=RoleEnum.user,nullable=False)
     refresh_tokens = relationship(
         "RefreshToken",
         back_populates="user",
