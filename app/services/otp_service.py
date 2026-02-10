@@ -1,11 +1,9 @@
-import random
-import uuid
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 from app.core.config.setting import settings
+from app.models.user import User
+from app.services.redis_otp import store_otp, verify_otp
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
-from datetime import datetime, timezone, timedelta
-from app.models.otp import OTP
+import uuid
 
 # Email config
 conf = ConnectionConfig(
@@ -20,49 +18,41 @@ conf = ConnectionConfig(
 )
 
 
-def generate_otp_code(length=6):
-    return str(random.randint(10 ** (length - 1), ((10**length) - 1)))
-
-
 async def send_otp_email(email: str, otp_code: str):
     message = MessageSchema(
         subject="Your OTP code",
         recipients=[email],
-        body=f"Your OTP code is {otp_code}.It expires in {settings.OTP_EXPIRE_MINUTES} minutes.",
+        body=f"Your OTP code is {otp_code}. It expires in {settings.OTP_EXPIRE_MINUTES} minutes.",
         subtype="plain",
     )
     fm = FastMail(conf)
     await fm.send_message(message)
 
-def create_user_otp(user_id: uuid.UUID, db: Session,purpose:str) -> OTP:
 
-    try:
-        now = datetime.now(timezone.utc)
+async def create_user_otp(user_id: uuid.UUID, purpose: str) -> str:
+    otp_code = await store_otp(str(user_id), purpose)
+    return otp_code
 
-        db.query(OTP).filter(
-            OTP.user_id == user_id,
-            OTP.purpose==purpose,
-            OTP.is_used==False,
-            OTP.expires_at > now
-        ).update(
-            {OTP.is_used: True},
-            synchronize_session=False
-        )
 
-        otp = OTP(
-            user_id=user_id,
-            code=generate_otp_code(),
-            purpose=purpose,
-            is_used=False,
-            expires_at=now + timedelta(minutes=settings.OTP_EXPIRE_MINUTES),
-        )
+async def verify_user_otp(
+    db: Session,
+    user_id: uuid.UUID,
+    otp_code: str,
+    purpose: str,
+) -> bool:
+    #  verify OTP in Redis
+    is_valid = await verify_otp(str(user_id), otp_code, purpose)
 
-        db.add(otp)
+    if not is_valid:
+        return False
+
+    #  mark user as verified
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return False
+
+    if not user.is_verified:
+        user.is_verified = True
         db.commit()
-        db.refresh(otp)
 
-        return otp
-
-    except SQLAlchemyError:
-        db.rollback()
-        raise 
+    return True

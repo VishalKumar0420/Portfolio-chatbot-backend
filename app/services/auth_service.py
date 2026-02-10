@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from sqlalchemy.orm import Session
-from fastapi import BackgroundTasks, HTTPException, status
+from fastapi import HTTPException, status
 from app.core.config.constants import OTP_PURPOSE_LOGIN
+from app.models.user import User
 from app.core.config.security import (
     create_access_token,
     create_refresh_token,
@@ -12,67 +13,104 @@ from app.core.config.security import (
 )
 from app.models import user
 from app.models.refresh_token import RefreshToken
-from app.models.user import User, RoleEnum
 from app.schemas.token import TokenResponse
 from app.schemas.user import UserCreate, UserLogin
 from passlib.context import CryptContext
 from app.core.config.setting import settings
 from app.services.otp_service import create_user_otp, send_otp_email
+from app.services.redis_otp import store_otp
 
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
-# signup
 
+async def signup(db: Session, data: UserCreate, purpose: str = OTP_PURPOSE_LOGIN):
 
-def signup(
-    db: Session,
-    data: UserCreate,
-    background_tasks: BackgroundTasks,
-    purpose: str = OTP_PURPOSE_LOGIN,
-):
     existing_user = db.query(User).filter(User.email == data.email).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="User Already Exist"
-        )
-    user = User(
-        name=data.name,
-        email=data.email,
-        password=hash_password(data.password),
-        # role=RoleEnum.user,
-    )
 
-    db.add(user)
+    if existing_user:
+        if existing_user.is_verified:
+            # Verified user → block signup
+            raise HTTPException(
+                status_code=409,
+                detail="User already exists and is verified",
+            )
+        else:
+            # Unverified user → resend OTP
+            otp_code =await store_otp(str(existing_user.id), purpose)
+            try:
+                await send_otp_email(existing_user.email, otp_code)
+            except Exception as e:
+                # Log error properly in production
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to send OTP email",
+                )
+            return {
+                "message": "User already exists but not verified. OTP resent.",
+                "user_id": existing_user.id,
+                "email": existing_user.email,
+            }
+
+    # User does not exist → create new
+    new_user = User(
+        full_name=data.full_name,
+        email=data.email,
+        hashed_password=hash_password(data.password),
+    )
+    db.add(new_user)
     db.commit()
-    db.refresh(user)
-    otp = create_user_otp(user.id, db, purpose=purpose)
-    background_tasks.add_task(send_otp_email, user.email, otp.code)
-    return user
+    db.refresh(new_user)
+
+    # Generate OTP in Redis
+    otp_code =await store_otp(str(new_user.id), purpose)
+    try:
+       await send_otp_email(new_user.email, otp_code)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to send OTP email",
+        )
+
+    return {
+        "message": "Signup successful. OTP sent to email.",
+        "user_id": new_user.id,
+        "email": new_user.email,
+    }
 
 
 def login(db: Session, data: UserLogin):
+
     user = db.query(User).filter(User.email == data.email).first()
-    if not user or not verify_password(data.password, user.password):
+    if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+        )
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email not verified. Please verify before login.",
         )
 
     access_token, refresh_token = issue_tokens(str(user.id), user.email, db)
 
     return TokenResponse(
-        access_token=access_token, refresh_token=refresh_token, token_type="bearer"
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
     )
 
 
 def issue_tokens(user_id: str, email: str, db: Session):
+
     payload = {"sub": user_id, "email": email}
 
     access_token = create_access_token(payload)
     refresh_token = create_refresh_token(payload)
-
     token_hash = pwd_context.hash(refresh_token)
 
+    # Save refresh token in DB
     db_token = RefreshToken(
         user_id=user_id,
         token=token_hash,
@@ -86,8 +124,10 @@ def issue_tokens(user_id: str, email: str, db: Session):
 
 
 def rotate_refresh_token(refresh_token: str, db: Session):
+
     payload = decode_token(refresh_token, "refresh")
 
+    # Retrieve all refresh tokens for the user
     db_tokens = (
         db.query(RefreshToken).filter(RefreshToken.user_id == payload["sub"]).all()
     )
@@ -99,8 +139,13 @@ def rotate_refresh_token(refresh_token: str, db: Session):
             break
 
     if not valid_token:
-        raise Exception("Refresh token reuse detected")
+        # Potential token reuse detected
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token reuse detected",
+        )
 
+    # Delete the used refresh token
     db.delete(valid_token)
     db.commit()
 

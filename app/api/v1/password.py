@@ -1,63 +1,67 @@
-from datetime import datetime, timezone
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
-from app.api.v1.otp import send_otp
-from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
+
 from app.core.db.session import get_db
-from app.models.otp import OTP
-from app.models.user import User
-from app.schemas.otp import OTP_Request
-from app.services.otp_service import create_user_otp, send_otp_email
 from app.core.config.security import hash_password
+from app.models.user import User
+from app.schemas.password import PasswordResetRequest
+from app.schemas.otp import OTP_Request
+from app.services.otp_service import send_otp_email
+from app.services.redis_otp import store_otp, verify_otp
+from app.services.otp_rate_limit import check_otp_rate_limit
+from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
 
 router = APIRouter(prefix="/password", tags=["PASSWORD"])
 
 
 @router.post("/forget", operation_id="forget_password")
-async def forget_password(request: OTP_Request = Body(...), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == request.email).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not Found"
-        )
-
-    otp = create_user_otp(user.id, db, purpose=OTP_PURPOSE_PASSWORD_RESET)
-    await send_otp_email(user.email, otp.code)
-    return {"message": "OTP send successfuly", "otp_id": str(otp.id)}
-
-
-@router.post("/reset", operation_id="reset-password")
-def reset_password(
-    email: str, otp_code: str, new_password: str, db: Session = Depends(get_db)
+async def forget_password(
+    request: OTP_Request = Body(...),
+    db: Session = Depends(get_db),
+    purpose=OTP_PURPOSE_PASSWORD_RESET
 ):
-    user = db.query(User).filter(User.email == email).first()
-
+    # 1. Check if user exists
+    user = db.query(User).filter(User.email == request.email).first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not Found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
         )
 
-    otp = (
-        db.query(OTP)
-        .filter(
-            OTP.user_id == user.id,
-            OTP.code == otp_code,
-            OTP.purpose == OTP_PURPOSE_PASSWORD_RESET,
-            OTP.is_used == False,
-            OTP.expires_at > datetime.now(timezone.utc),
-        )
-        .first()
-    )
+    # 2. Rate limit OTP requests
+    check_otp_rate_limit(str(user.id),purpose)
 
-    if not otp:
+    # 3. Store OTP in Redis (5 minutes TTL)
+    otp_code =await store_otp(str(user.id), purpose)
+
+    # 4. Send OTP via email
+    await send_otp_email(user.email, otp_code)
+
+    return {"message": "OTP sent successfully"}
+
+
+@router.post("/reset", operation_id="reset_password")
+def reset_password(
+    data: PasswordResetRequest,
+    db: Session = Depends(get_db),
+    purpose=OTP_PURPOSE_PASSWORD_RESET
+):
+    # 1. Check if user exists
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="OTP is invalid or expires"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
         )
 
-    user.password=hash_password(new_password)
-    otp.is_used=True
+    # 2. Verify OTP from Redis
+    if not verify_otp(str(user.id), purpose, data.otp_code):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OTP",
+        )
+
+    user.hashed_password = hash_password(data.new_password)
     db.commit()
 
-    return {"message":"Password  reset successfully"}
+    return {"message": "Password reset successfully"}

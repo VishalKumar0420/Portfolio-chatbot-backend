@@ -16,5 +16,5 @@ class Settings(BaseSettings):
     MAIL_FROM: str | None = None
     MAIL_SERVER: str | None = None
     MAIL_PORT: int | None = None
-
+    REDIS_URL:str
 settings=Settings()

@@ -1,28 +1,36 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi import status, Depends
 from sqlalchemy.orm import Session
 from app.core.db.session import get_db
-from app.models.user import User
-from app.schemas.token import TokenResponse
-from app.schemas.user import UserCreate, UserLogin
+from app.schemas.token import RefreshTokenRequest, TokenResponse
+from app.schemas.user import SignupResponse, UserCreate, UserLogin
 from app.services.auth_service import login, rotate_refresh_token, signup
-from fastapi import BackgroundTasks
+
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post("/signup", operation_id="signup")
-async def user_signup(data: UserCreate,background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    return signup(db,data,background_tasks)
+@router.post(
+    "/signup",
+    response_model=SignupResponse,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="signup",
+)
+async def user_signup(data: UserCreate, db: Session = Depends(get_db)):
+    return await signup(db, data)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, status_code=status.HTTP_200_OK)
 def user_login(data: UserLogin, db: Session = Depends(get_db)):
     return login(db, data)
 
 
 @router.post("/refresh")
-def refresh(refresh_token: str, db: Session = Depends(get_db)):
+def refresh(refresh_token: RefreshTokenRequest, db: Session = Depends(get_db)):
     access_token, new_refresh_token = rotate_refresh_token(refresh_token, db)
 
-    return {"access_token": access_token, "refresh_token": new_refresh_token}
+    return {
+        "access_token": access_token,
+        "refresh_token": new_refresh_token,
+        "token_type": "bearer",
+    }

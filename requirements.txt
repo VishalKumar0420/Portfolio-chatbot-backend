@@ -12,6 +12,7 @@ passlib[bcrypt]
 argon2-cffi
 python-dotenv
 fastapi-mail
+redis>=5.0.0
 
 # Validation
 pydantic[email]

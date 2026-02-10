@@ -1,24 +1,34 @@
-from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, field_validator
 from uuid import UUID
-from app.models.user import RoleEnum
+from datetime import datetime
 
 
 class UserCreate(BaseModel):
-    name: str
+    full_name: str
     email: EmailStr
-    password:str
-    # role: Optional[RoleEnum] = None
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        return v
+
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class SignupResponse(BaseModel):
+    message: str
+    user_id: UUID
+    email: EmailStr
+
 
 class UserResponse(BaseModel):
     id: UUID
-    name: str
+    full_name: str
     email: EmailStr
-    # role: str
 
     model_config = {"from_attributes": True}
