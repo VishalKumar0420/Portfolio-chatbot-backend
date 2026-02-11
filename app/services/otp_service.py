@@ -35,7 +35,11 @@ conf = ConnectionConfig(
 
 def send_otp_email(email: str, otp: str):
     url = "https://api.brevo.com/v3/smtp/email"
-    print(email)
+
+    print("Sending email to:", email)
+    print("Using API KEY:", settings.BREVO_API_KEY)
+    print("Using FROM EMAIL:", settings.FROM_EMAIL)
+
     payload = {
         "sender": {"email": settings.FROM_EMAIL},
         "to": [{"email": email}],
@@ -56,9 +60,11 @@ def send_otp_email(email: str, otp: str):
 
     response = requests.post(url, json=payload, headers=headers)
 
+    print("Brevo Status Code:", response.status_code)
+    print("Brevo Response:", response.text)
+
     if response.status_code != 201:
-        print("BREVO API ERROR:", response.text)
-        raise Exception("Email failed")
+        raise Exception(f"Email failed: {response.text}")
 
 
 async def create_user_otp(user_id: uuid.UUID, purpose: str) -> str:
