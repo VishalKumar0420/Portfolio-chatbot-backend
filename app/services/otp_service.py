@@ -3,8 +3,10 @@ from app.core.config.setting import settings
 from app.models.user import User
 from app.services.redis_otp import store_otp, verify_otp
 from sqlalchemy.orm import Session
+from email.mime.text import MIMEText
+import smtplib
 import uuid
-
+import requests
 # Email config
 conf = ConnectionConfig(
     MAIL_USERNAME=settings.MAIL_USERNAME,
@@ -18,15 +20,45 @@ conf = ConnectionConfig(
 )
 
 
-async def send_otp_email(email: str, otp_code: str):
-    message = MessageSchema(
-        subject="Your OTP code",
-        recipients=[email],
-        body=f"Your OTP code is {otp_code}. It expires in {settings.OTP_EXPIRE_MINUTES} minutes.",
-        subtype="plain",
-    )
-    fm = FastMail(conf)
-    await fm.send_message(message)
+
+# async def send_otp_email(email: str, otp_code: str):
+#     message = MessageSchema(
+#         subject="Your OTP code",
+#         recipients=[email],
+#         body=f"Your OTP code is {otp_code}. It expires in {settings.OTP_EXPIRE_MINUTES} minutes.",
+#         subtype="plain",
+#     )
+#     fm = FastMail(conf)
+#     await fm.send_message(message)
+
+
+
+def send_otp_email(email: str, otp: str):
+    url = "https://api.brevo.com/v3/smtp/email"
+    print(email)
+    payload = {
+        "sender": {"email": settings.FROM_EMAIL},
+        "to": [{"email": email}],
+        "subject": "Your OTP Code",
+        "htmlContent": f"""
+        <h2>Your OTP Code</h2>
+        <p>Your OTP is:</p>
+        <h1>{otp}</h1>
+        <p>This OTP will expire soon.</p>
+        """
+    }
+
+    headers = {
+        "accept": "application/json",
+        "api-key": settings.BREVO_API_KEY,
+        "content-type": "application/json"
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+
+    if response.status_code != 201:
+        print("BREVO API ERROR:", response.text)
+        raise Exception("Email failed")
 
 
 async def create_user_otp(user_id: uuid.UUID, purpose: str) -> str:
