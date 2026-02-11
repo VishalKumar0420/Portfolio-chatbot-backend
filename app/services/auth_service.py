@@ -39,7 +39,7 @@ async def signup(db: Session, data: UserCreate, purpose: str = OTP_PURPOSE_LOGIN
             # Unverified user → resend OTP
             otp_code =await store_otp(str(existing_user.id), purpose)
             try:
-                await send_otp_email(existing_user.email, otp_code)
+                 send_otp_email(existing_user.email, otp_code)
             except Exception as e:
                 # Log error properly in production
                 raise HTTPException(
@@ -65,7 +65,7 @@ async def signup(db: Session, data: UserCreate, purpose: str = OTP_PURPOSE_LOGIN
     # Generate OTP in Redis
     otp_code =await store_otp(str(new_user.id), purpose)
     try:
-       await send_otp_email(new_user.email, otp_code)
+        send_otp_email(new_user.email, otp_code)
     except Exception as e:
         raise HTTPException(
             status_code=500,
