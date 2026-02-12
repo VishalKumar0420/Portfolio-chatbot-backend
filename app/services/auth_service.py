@@ -101,12 +101,29 @@ async def signup(
     # ------------------------------------
     existing_user = db.query(User).filter(User.email == data.email).first()
 
-    # CASE 1: User exists and verified → block
-    if existing_user and existing_user.is_verified:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User already exists",
-        )
+    if existing_user:
+        if existing_user.is_verified:
+            # Verified user → block signup
+            raise HTTPException(
+                status_code=409,
+                detail="User already exists and is verified",
+            )
+        else:
+            # Unverified user → resend OTP
+            otp_code =await store_otp(str(existing_user.id), purpose)
+            try:
+                 send_otp_email(existing_user.email, otp_code)
+            except Exception as e:
+                # Log error properly in production
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to send OTP email",
+                )
+            return {
+                "message": "User already exists but not verified. OTP resent.",
+                "user_id": existing_user.id,
+                "email": existing_user.email,
+            }
 
     # CASE 2: User exists but NOT verified → resend OTP
     if existing_user and not existing_user.is_verified:
@@ -138,17 +155,15 @@ async def signup(
     db.commit()
     db.refresh(new_user)
 
-    # ------------------------------------
-    # 4️⃣ Generate OTP in Redis
-    # ------------------------------------
-    otp_code = await store_otp(str(new_user.id), purpose)
-
-    # IMPORTANT: Use new_user.email (NOT existing_user.email)
-    background_tasks.add_task(
-        send_otp_email,
-        new_user.email,
-        otp_code,
-    )
+    # Generate OTP in Redis
+    otp_code =await store_otp(str(new_user.id), purpose)
+    try:
+        send_otp_email(new_user.email, otp_code)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to send OTP email",
+        )
 
     return {
         "message": "Signup successful. OTP sent to email.",
