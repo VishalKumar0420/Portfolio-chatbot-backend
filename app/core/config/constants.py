@@ -1,3 +1,3 @@
-OTP_PURPOSE_LOGIN = "login"
-OTP_PURPOSE_PASSWORD_RESET = "password_reset"
-OTP_PURPOSE_EMAIL_VERIFY = "email_verification"
+OTP_PURPOSE_LOGIN = "Login"
+OTP_PURPOSE_PASSWORD_RESET = "Password Reset"
+OTP_PURPOSE_EMAIL_VERIFY = "Email Verification"

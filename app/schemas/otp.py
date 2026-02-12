@@ -4,7 +4,7 @@ from pydantic import BaseModel, EmailStr, Field
 
 class OTP_Request(BaseModel):
     email: EmailStr
-    purpose: Literal["signup", "login", "password_reset"]
+    purpose: Literal["Login", "Password Reset", "Email Verification"]
 
 
 class OTPVerifyRequest(BaseModel):

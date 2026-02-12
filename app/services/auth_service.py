@@ -17,66 +17,145 @@ from app.schemas.token import TokenResponse
 from app.schemas.user import UserCreate, UserLogin
 from passlib.context import CryptContext
 from app.core.config.setting import settings
-from app.services.otp_service import create_user_otp, send_otp_email
 from app.services.redis_otp import store_otp
+from app.services.mail_service import send_otp_email
+from fastapi import BackgroundTasks
 
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
-async def signup(db: Session, data: UserCreate, purpose: str = OTP_PURPOSE_LOGIN):
+# async def signup(
+#     db: Session,
+#     data: UserCreate,
+#     background_tasks: BackgroundTasks,
+#     purpose: str = OTP_PURPOSE_LOGIN,
+# ):
 
+#     existing_user = db.query(User).filter(User.email == data.email).first()
+
+#     if existing_user:
+#         if existing_user.is_verified:
+#             # Verified user → block signup
+#             raise HTTPException(
+#                 status_code=409,
+#                 detail="User already exists and is verified",
+    #         )
+    #     else:
+    #         # Unverified user → resend OTP
+    #         otp_code = await store_otp(str(existing_user.id), purpose)
+    #         # try:
+    #         #     await send_otp_email(existing_user.email, otp_code)
+    #         # except Exception as e:
+    #         #     # Log error properly in production
+    #         #     raise HTTPException(
+    #         #         status_code=500,
+    #         #         detail="Failed to send OTP email",
+    #         #     )
+    #         background_tasks.add_task(
+    #             send_otp_email,
+    #             existing_user.email,
+    #             otp_code,
+    #         )
+    #         return {
+    #             "message": "User already exists but not verified. OTP resent.",
+    #             "user_id": existing_user.id,
+    #             "email": existing_user.email,
+    #         }
+
+    # # User does not exist → create new
+    # new_user = User(
+    #     full_name=data.full_name,
+    #     email=data.email,
+    #     hashed_password=hash_password(data.password),
+    # )
+    # db.add(new_user)
+    # db.commit()
+    # db.refresh(new_user)
+
+    # # Generate OTP in Redis
+    # otp_code = await store_otp(str(new_user.id), purpose)
+    # background_tasks.add_task(
+    #     send_otp_email,
+    #     existing_user.email,
+    #     otp_code,
+    # )
+
+    # return {
+    #     "message": "Signup successful. OTP sent to email.",
+    #     "user_id": new_user.id,
+    #     "email": new_user.email,
+    # }
+
+
+
+
+async def signup(
+    db: Session,
+    data: UserCreate,
+    background_tasks: BackgroundTasks,
+    purpose: str = OTP_PURPOSE_LOGIN,
+):
+    # ------------------------------------
+    # 1️⃣ Check if user already exists
+    # ------------------------------------
     existing_user = db.query(User).filter(User.email == data.email).first()
 
-    if existing_user:
-        if existing_user.is_verified:
-            # Verified user → block signup
-            raise HTTPException(
-                status_code=409,
-                detail="User already exists and is verified",
-            )
-        else:
-            # Unverified user → resend OTP
-            otp_code =await store_otp(str(existing_user.id), purpose)
-            try:
-                await send_otp_email(existing_user.email, otp_code)
-            except Exception as e:
-                # Log error properly in production
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to send OTP email",
-                )
-            return {
-                "message": "User already exists but not verified. OTP resent.",
-                "user_id": existing_user.id,
-                "email": existing_user.email,
-            }
+    # CASE 1: User exists and verified → block
+    if existing_user and existing_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already exists",
+        )
 
-    # User does not exist → create new
+    # CASE 2: User exists but NOT verified → resend OTP
+    if existing_user and not existing_user.is_verified:
+        otp_code = await store_otp(str(existing_user.id), purpose)
+
+        background_tasks.add_task(
+            send_otp_email,
+            existing_user.email,
+            otp_code,
+        )
+
+        return {
+            "message": "User already exists but not verified. OTP resent.",
+            "user_id": existing_user.id,
+            "email": existing_user.email,
+        }
+
+    # ------------------------------------
+    # 3️⃣ User does NOT exist → create new
+    # ------------------------------------
     new_user = User(
         full_name=data.full_name,
         email=data.email,
         hashed_password=hash_password(data.password),
+        is_verified=False,
     )
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # Generate OTP in Redis
-    otp_code =await store_otp(str(new_user.id), purpose)
-    try:
-       await send_otp_email(new_user.email, otp_code)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to send OTP email",
-        )
+    # ------------------------------------
+    # 4️⃣ Generate OTP in Redis
+    # ------------------------------------
+    otp_code = await store_otp(str(new_user.id), purpose)
+
+    # IMPORTANT: Use new_user.email (NOT existing_user.email)
+    background_tasks.add_task(
+        send_otp_email,
+        new_user.email,
+        otp_code,
+    )
 
     return {
         "message": "Signup successful. OTP sent to email.",
         "user_id": new_user.id,
         "email": new_user.email,
     }
+
 
 
 def login(db: Session, data: UserLogin):

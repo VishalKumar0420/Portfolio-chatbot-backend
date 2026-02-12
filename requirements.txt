@@ -1,6 +1,7 @@
 # Server
 fastapi
 uvicorn
+anyio
 
 # Database
 sqlalchemy
@@ -8,23 +9,22 @@ psycopg2-binary
 
 # Auth & Security
 python-jose
-passlib[bcrypt]
+passlib[argon2]
 argon2-cffi
 python-dotenv
-fastapi-mail
+resend
 redis>=5.0.0
 
 # Validation
-pydantic[email]
-pydantic>=2.7.4,<3.0.0
+pydantic[email]>=2.7.4,<3.0.0
 
 # LangChain
-langchain==0.3.27
-langchain-community==0.3.31
-langchain-core==0.3.83
-langchain-text-splitters==0.3.9
-langchain-pinecone==0.2.13
-langchain-huggingface==0.1.2
+langchain
+langchain-community
+langchain-core
+langchain-text-splitters
+langchain-pinecone
+langchain-huggingface
 
 # Vector DB
 pinecone[grpc]==7.3.0

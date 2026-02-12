@@ -5,6 +5,7 @@ from app.core.db.session import get_db
 from app.schemas.token import RefreshTokenRequest, TokenResponse
 from app.schemas.user import SignupResponse, UserCreate, UserLogin
 from app.services.auth_service import login, rotate_refresh_token, signup
+from fastapi import BackgroundTasks
 
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -16,8 +17,8 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
     status_code=status.HTTP_201_CREATED,
     operation_id="signup",
 )
-async def user_signup(data: UserCreate, db: Session = Depends(get_db)):
-    return await signup(db, data)
+async def user_signup(data: UserCreate,background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    return await signup(db, data,background_tasks)
 
 
 @router.post("/login", response_model=TokenResponse, status_code=status.HTTP_200_OK)
