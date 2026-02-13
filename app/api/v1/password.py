@@ -34,7 +34,6 @@ async def forget_user_password(
         purpose=OTP_PURPOSE_PASSWORD_RESET,
     )
 
-
 @router.post(
     "/reset",
     operation_id="reset_password",

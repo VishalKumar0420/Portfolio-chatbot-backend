@@ -12,7 +12,7 @@ python-jose
 passlib[argon2]
 argon2-cffi
 python-dotenv
-resend
+fastapi-mail
 redis>=5.0.0
 
 # Validation

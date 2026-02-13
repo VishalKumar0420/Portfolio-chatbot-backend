@@ -1,96 +1,55 @@
-from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
-from app.core.config.setting import settings
+from fastapi import BackgroundTasks, HTTPException, status
 from app.models.user import User
+from app.schemas.otp import OTP_Request
+from app.services.mail_service import send_otp_email
 from app.services.redis_otp import store_otp, verify_otp
 from sqlalchemy.orm import Session
-from email.mime.text import MIMEText
-import smtplib
-import uuid
-import requests
-# Email config
-conf = ConnectionConfig(
-    MAIL_USERNAME=settings.MAIL_USERNAME,
-    MAIL_PASSWORD=settings.MAIL_PASSWORD,
-    MAIL_FROM=settings.MAIL_FROM,
-    MAIL_PORT=settings.MAIL_PORT,
-    MAIL_SERVER=settings.MAIL_SERVER,
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
-    USE_CREDENTIALS=True,
-)
 
 
+async def create_user_otp(
+    request: OTP_Request, background_tasks: BackgroundTasks, db: Session, purpose: str
+) -> str:
+    user = db.query(User).filter(User.email == request.email).first()
 
-# async def send_otp_email(email: str, otp_code: str):
-#     message = MessageSchema(
-#         subject="Your OTP code",
-#         recipients=[email],
-#         body=f"Your OTP code is {otp_code}. It expires in {settings.OTP_EXPIRE_MINUTES} minutes.",
-#         subtype="plain",
-#     )
-#     fm = FastMail(conf)
-#     await fm.send_message(message)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
 
+    otp_code = await store_otp(str(user.id), purpose)
 
+    background_tasks.add_task(
+        send_otp_email,
+        user.email,
+        otp_code,
+    )
 
-def send_otp_email(email: str, otp: str):
-    url = "https://api.brevo.com/v3/smtp/email"
-
-    print("Sending email to:", email)
-    print("Using API KEY:", settings.BREVO_API_KEY)
-    print("Using FROM EMAIL:", settings.FROM_EMAIL)
-
-    payload = {
-        "sender": {"email": settings.FROM_EMAIL},
-        "to": [{"email": email}],
-        "subject": "Your OTP Code",
-        "htmlContent": f"""
-        <h2>Your OTP Code</h2>
-        <p>Your OTP is:</p>
-        <h1>{otp}</h1>
-        <p>This OTP will expire soon.</p>
-        """
-    }
-
-    headers = {
-        "accept": "application/json",
-        "api-key": settings.BREVO_API_KEY,
-        "content-type": "application/json"
-    }
-
-    response = requests.post(url, json=payload, headers=headers)
-
-    print("Brevo Status Code:", response.status_code)
-    print("Brevo Response:", response.text)
-
-    if response.status_code != 201:
-        raise Exception(f"Email failed: {response.text}")
-
-
-async def create_user_otp(user_id: uuid.UUID, purpose: str) -> str:
-    otp_code = await store_otp(str(user_id), purpose)
-    return otp_code
+    return {"message": "OTP sent successfully"}
 
 
 async def verify_user_otp(
-    db: Session,
-    user_id: uuid.UUID,
+    email: str,
     otp_code: str,
+    db: Session,
     purpose: str,
 ) -> bool:
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
     #  verify OTP in Redis
-    is_valid = await verify_otp(str(user_id), otp_code, purpose)
+    is_valid = await verify_otp(str(user.id), otp_code, purpose)
 
     if not is_valid:
-        return False
-
-    #  mark user as verified
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        return False
-
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OTP",
+        )
     if not user.is_verified:
         user.is_verified = True
         db.commit()
 
-    return True
+    return {"message": "OTP verified successfully"}

@@ -40,54 +40,52 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 #             raise HTTPException(
 #                 status_code=409,
 #                 detail="User already exists and is verified",
-    #         )
-    #     else:
-    #         # Unverified user → resend OTP
-    #         otp_code = await store_otp(str(existing_user.id), purpose)
-    #         # try:
-    #         #     await send_otp_email(existing_user.email, otp_code)
-    #         # except Exception as e:
-    #         #     # Log error properly in production
-    #         #     raise HTTPException(
-    #         #         status_code=500,
-    #         #         detail="Failed to send OTP email",
-    #         #     )
-    #         background_tasks.add_task(
-    #             send_otp_email,
-    #             existing_user.email,
-    #             otp_code,
-    #         )
-    #         return {
-    #             "message": "User already exists but not verified. OTP resent.",
-    #             "user_id": existing_user.id,
-    #             "email": existing_user.email,
-    #         }
+#         )
+#     else:
+#         # Unverified user → resend OTP
+#         otp_code = await store_otp(str(existing_user.id), purpose)
+#         # try:
+#         #     await send_otp_email(existing_user.email, otp_code)
+#         # except Exception as e:
+#         #     # Log error properly in production
+#         #     raise HTTPException(
+#         #         status_code=500,
+#         #         detail="Failed to send OTP email",
+#         #     )
+#         background_tasks.add_task(
+#             send_otp_email,
+#             existing_user.email,
+#             otp_code,
+#         )
+#         return {
+#             "message": "User already exists but not verified. OTP resent.",
+#             "user_id": existing_user.id,
+#             "email": existing_user.email,
+#         }
 
-    # # User does not exist → create new
-    # new_user = User(
-    #     full_name=data.full_name,
-    #     email=data.email,
-    #     hashed_password=hash_password(data.password),
-    # )
-    # db.add(new_user)
-    # db.commit()
-    # db.refresh(new_user)
+# # User does not exist → create new
+# new_user = User(
+#     full_name=data.full_name,
+#     email=data.email,
+#     hashed_password=hash_password(data.password),
+# )
+# db.add(new_user)
+# db.commit()
+# db.refresh(new_user)
 
-    # # Generate OTP in Redis
-    # otp_code = await store_otp(str(new_user.id), purpose)
-    # background_tasks.add_task(
-    #     send_otp_email,
-    #     existing_user.email,
-    #     otp_code,
-    # )
+# # Generate OTP in Redis
+# otp_code = await store_otp(str(new_user.id), purpose)
+# background_tasks.add_task(
+#     send_otp_email,
+#     existing_user.email,
+#     otp_code,
+# )
 
-    # return {
-    #     "message": "Signup successful. OTP sent to email.",
-    #     "user_id": new_user.id,
-    #     "email": new_user.email,
-    # }
-
-
+# return {
+#     "message": "Signup successful. OTP sent to email.",
+#     "user_id": new_user.id,
+#     "email": new_user.email,
+# }
 
 
 async def signup(
@@ -110,9 +108,9 @@ async def signup(
             )
         else:
             # Unverified user → resend OTP
-            otp_code =await store_otp(str(existing_user.id), purpose)
+            otp_code = await store_otp(str(existing_user.id), purpose)
             try:
-                 send_otp_email(existing_user.email, otp_code)
+                send_otp_email(existing_user.email, otp_code)
             except Exception as e:
                 # Log error properly in production
                 raise HTTPException(
@@ -156,9 +154,13 @@ async def signup(
     db.refresh(new_user)
 
     # Generate OTP in Redis
-    otp_code =await store_otp(str(new_user.id), purpose)
+    otp_code = await store_otp(str(new_user.id), purpose)
     try:
-        send_otp_email(new_user.email, otp_code)
+        background_tasks.add_task(
+            send_otp_email,
+            new_user.email,
+            otp_code,
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -170,7 +172,6 @@ async def signup(
         "user_id": new_user.id,
         "email": new_user.email,
     }
-
 
 
 def login(db: Session, data: UserLogin):

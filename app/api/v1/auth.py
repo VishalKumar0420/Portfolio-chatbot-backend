@@ -27,8 +27,8 @@ def user_login(data: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/refresh")
-def refresh(refresh_token: RefreshTokenRequest, db: Session = Depends(get_db)):
-    access_token, new_refresh_token = rotate_refresh_token(refresh_token, db)
+def refresh(data: RefreshTokenRequest, db: Session = Depends(get_db)):
+    access_token, new_refresh_token = rotate_refresh_token(data.refresh_token, db)
 
     return {
         "access_token": access_token,
