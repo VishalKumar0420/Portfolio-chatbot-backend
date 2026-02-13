@@ -14,7 +14,7 @@ from app.api.v1.password import router as password_router
 from app.api.v1.chat import router as chat_router
 from fastapi import APIRouter
 
-# --------------------------------------------------
+# ------------------------------------------------  --
 # App setup
 # --------------------------------------------------
 
@@ -23,6 +23,7 @@ app = FastAPI(title="Portfolio Chatbot API")
 # --------------------------------------------------
 # CORS
 # --------------------------------------------------
+print("🔥 main.py loaded")
 
 app.add_middleware(
     CORSMiddleware,
