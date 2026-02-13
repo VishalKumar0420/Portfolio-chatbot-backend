@@ -18,16 +18,16 @@ redis>=5.0.0
 # Validation
 pydantic[email]>=2.7.4,<3.0.0
 
-# LangChain
-langchain
-langchain-community
-langchain-core
-langchain-text-splitters
-langchain-pinecone
-langchain-huggingface
+# LangChain (compatible)
+langchain>=0.2.11
+langchain-community>=0.2.11
+langchain-core>=0.2.11
+langchain-text-splitters>=0.2.11
+langchain-pinecone>=0.1.3
+langchain-huggingface>=0.0.3
 
 # Vector DB
-pinecone[grpc]==7.3.0
+pinecone-client>=3.0.0
 
 # LLM API
 groq==0.13.0
