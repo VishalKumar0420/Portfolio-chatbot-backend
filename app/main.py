@@ -106,7 +106,6 @@
 #         )
 
 
-
 # # --------------------------------------------------
 # # Routes
 # # --------------------------------------------------
@@ -118,13 +117,13 @@
 # app.include_router(chat_router)
 
 
-# app/main.py (temporary test)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from app.api.v1.health_check import router as heath_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.otp import router as otp_router
 from app.api.v1.password import router as password_router
+
 # from app.api.v1.chat import router as chat_router
 
 app = FastAPI(title="Portfolio Chatbot API")
@@ -137,11 +136,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(heath_router)
 app.include_router(auth_router)
 app.include_router(otp_router)
 app.include_router(password_router)
 # app.include_router(chat_router)
-
-@app.get("/")
-def root():
-    return {"status": "ok"}

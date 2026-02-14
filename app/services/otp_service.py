@@ -1,7 +1,7 @@
 from fastapi import BackgroundTasks, HTTPException, status
 from app.models.user import User
 from app.schemas.otp import OTP_Request
-# from app.services.mail_service import send_otp_email
+from app.services.mail_service import send_otp_email
 from app.services.redis_otp import store_otp, verify_otp
 from sqlalchemy.orm import Session
 
@@ -19,11 +19,11 @@ async def create_user_otp(
 
     otp_code = await store_otp(str(user.id), purpose)
 
-    # background_tasks.add_task(
-    #     send_otp_email,
-    #     user.email,
-    #     otp_code,
-    # )
+    background_tasks.add_task(
+        send_otp_email,
+        user.email,
+        otp_code,
+    )
 
     return {"message": "OTP sent successfully"}
 
