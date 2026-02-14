@@ -19,11 +19,11 @@ async def create_user_otp(
 
     otp_code = await store_otp(str(user.id), purpose)
 
-    background_tasks.add_task(
-        send_otp_email,
-        user.email,
-        otp_code,
-    )
+    # background_tasks.add_task(
+    #     send_otp_email,
+    #     user.email,
+    #     otp_code,
+    # )
 
     return {"message": "OTP sent successfully"}
 

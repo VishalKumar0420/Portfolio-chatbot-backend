@@ -1,15 +1,10 @@
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter,Depends,status
 from sqlalchemy.orm import Session
 
 from app.core.db.session import get_db
-from app.core.config.security import hash_password
-from app.models.user import User
 from app.schemas.password import PasswordResetRequest
 from app.schemas.otp import OTP_Request, OTPResponse
-from app.services.mail_service import send_otp_email
 from app.services.password_service import forget_password, reset_password
-from app.services.redis_otp import store_otp, verify_otp
-from app.services.otp_rate_limit import check_otp_rate_limit
 from fastapi import BackgroundTasks
 from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
 

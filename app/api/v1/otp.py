@@ -1,14 +1,10 @@
-from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 from app.core.config.constants import OTP_PURPOSE_LOGIN
 from app.core.db.session import get_db
-from app.models.user import User
 from app.schemas.otp import OTP_Request
-from fastapi import HTTPException, status
-from app.services.mail_service import send_otp_email
+from fastapi import status
 from app.services.otp_service import create_user_otp, verify_user_otp
-from app.services.redis_otp import store_otp, verify_otp
 from app.schemas.otp import OTPResponse
 from pydantic import EmailStr
 

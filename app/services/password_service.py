@@ -5,7 +5,7 @@ from app.models.user import User
 from app.schemas.otp import OTP_Request
 from app.schemas.password import PasswordResetRequest
 from app.core.config.security import hash_password
-from app.services.mail_service import send_otp_email
+# from app.services.mail_service import send_otp_email
 from app.services.otp_rate_limit import check_otp_rate_limit
 from app.services.redis_otp import store_otp, verify_otp
 
@@ -28,11 +28,11 @@ async def forget_password(
 
     otp_code = await store_otp(str(user.id), purpose)
 
-    background_tasks.add_task(
-        send_otp_email,
-        user.email,
-        otp_code,
-    )
+    # background_tasks.add_task(
+    #     send_otp_email,
+    #     user.email,
+    #     otp_code,
+    # )
 
     return {"message": "OTP sent successfully"}
 
