@@ -110,9 +110,11 @@ async def signup(
             # Unverified user → resend OTP
             otp_code = await store_otp(str(existing_user.id), purpose)
             try:
-                send_otp_email(existing_user.email, otp_code)
+                print("SENDING EMAIL OTP")
+                await send_otp_email(existing_user.email, otp_code)
             except Exception as e:
                 # Log error properly in production
+                print(e,"EEEEEEEEE")
                 raise HTTPException(
                     status_code=500,
                     detail="Failed to send OTP email",

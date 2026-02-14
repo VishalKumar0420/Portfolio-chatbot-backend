@@ -16,6 +16,7 @@ conf = ConnectionConfig(
 
 
 async def send_otp_email(email: str, otp_code: str):
+    print(email,otp_code,"FIRST")
     message = MessageSchema(
         subject="Your OTP Code",
         recipients=[email],
@@ -25,12 +26,16 @@ async def send_otp_email(email: str, otp_code: str):
         ),
         subtype="plain",
     )
+    print(message,"SECOND")
 
     fm = FastMail(conf)
-
+    print(conf,"CONFIG")
+    print(fm,"fm")
     try:
         await fm.send_message(message)
-    except Exception:
+        print("FOURTH")
+    except Exception as e:
+        print("ERROR",e)
         raise HTTPException(
             status_code=500,
             detail="Failed to send OTP email",
