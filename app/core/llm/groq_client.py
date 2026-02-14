@@ -1,7 +1,8 @@
 import os
 from groq import Groq
-from app.core.config.setting import settings
+from app.core.config.setting import get_settings
 
+settings = get_settings()
 GROQ_API_KEY = settings.GROQ_API_KEY
 
 if not GROQ_API_KEY:

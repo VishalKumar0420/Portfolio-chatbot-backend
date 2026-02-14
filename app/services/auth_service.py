@@ -16,12 +16,12 @@ from app.models.refresh_token import RefreshToken
 from app.schemas.token import TokenResponse
 from app.schemas.user import UserCreate, UserLogin
 from passlib.context import CryptContext
-from app.core.config.setting import settings
+from app.core.config.setting import get_settings
 from app.services.redis_otp import store_otp
 from app.services.mail_service import send_otp_email
 from fastapi import BackgroundTasks
 
-
+settings = get_settings()
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 

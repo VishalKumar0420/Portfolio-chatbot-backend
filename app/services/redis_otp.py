@@ -1,8 +1,9 @@
 import random
 from app.core.config.redis import redis_client  # should be redis.asyncio.Redis
-from app.core.config.setting import settings
+from app.core.config.setting import get_settings
 from app.services.otp_rate_limit import check_otp_rate_limit
-from sqlalchemy.orm import Session
+
+settings = get_settings()
 OTP_TTL_SECONDS = settings.OTP_EXPIRE_MINUTES * 60  # configurable TTL
 
 
@@ -24,7 +25,7 @@ async def store_otp(user_id: str, purpose: str) -> str:
     return otp
 
 
-async def verify_otp(user_id: str,otp_code: str, purpose: str) -> bool:
+async def verify_otp(user_id: str, otp_code: str, purpose: str) -> bool:
     key = f"otp:{purpose}:{user_id}"
     stored_otp = await redis_client.get(key)
 
@@ -41,7 +42,3 @@ async def verify_otp(user_id: str,otp_code: str, purpose: str) -> bool:
     # Delete after successful verification
     await redis_client.delete(key)
     return True
-
-
-
-

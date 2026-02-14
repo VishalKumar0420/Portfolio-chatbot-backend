@@ -1,9 +1,10 @@
 from pinecone import Pinecone
 from langchain_pinecone import PineconeVectorStore
 from langchain_huggingface import HuggingFaceEmbeddings
-from app.core.config.setting import settings
+from app.core.config.setting import get_settings
 
 INDEX_NAME = "portfolio-chatbot-package"
+settings = get_settings()
 
 _vectorstore = None  # cache
 

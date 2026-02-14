@@ -2,9 +2,9 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.core.config.setting import settings
+from app.core.config.setting import get_settings
 
-
+settings = get_settings()
 if not settings.DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set in environment variables")
 

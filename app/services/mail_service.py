@@ -1,7 +1,8 @@
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 from fastapi import HTTPException
-from app.core.config.setting import settings
+from app.core.config.setting import get_settings
 
+settings = get_settings()
 conf = ConnectionConfig(
     MAIL_USERNAME=settings.MAIL_USERNAME,
     MAIL_PASSWORD=settings.MAIL_PASSWORD,
@@ -12,6 +13,7 @@ conf = ConnectionConfig(
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,
 )
+
 
 async def send_otp_email(email: str, otp_code: str):
     message = MessageSchema(

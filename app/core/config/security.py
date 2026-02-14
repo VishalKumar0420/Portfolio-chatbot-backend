@@ -3,9 +3,9 @@ from fastapi import HTTPException
 from jose import JWTError, jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from app.core.config.setting import settings
+from app.core.config.setting import get_settings
 
-
+settings = get_settings()
 ph = PasswordHasher()
 
 
