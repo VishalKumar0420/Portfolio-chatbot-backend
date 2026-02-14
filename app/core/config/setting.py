@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # MAIL_PASSWORD: str | None = None
     # MAIL_FROM: str | None = None
     # MAIL_SERVER: str | None = None
-    MAIL_PORT: int | None = None
+    # MAIL_PORT: int | None = None
     REDIS_URL: str
     BREVO_API_KEY:str
     FROM_EMAIL:str
