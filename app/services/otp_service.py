@@ -1,3 +1,4 @@
+import uuid
 from fastapi import BackgroundTasks, HTTPException, status
 from app.models.user import User
 from app.schemas.otp import OTP_Request
@@ -26,6 +27,13 @@ async def create_user_otp(
     )
 
     return {"message": "OTP sent successfully"}
+
+
+
+
+async def create_user_otp(user_id: uuid.UUID, purpose: str) -> str:
+    otp_code = await store_otp(str(user_id), purpose)
+    return otp_code
 
 
 async def verify_user_otp(

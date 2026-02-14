@@ -111,7 +111,7 @@ async def signup(
             otp_code = await store_otp(str(existing_user.id), purpose)
             try:
                 print("SENDING EMAIL OTP")
-                await send_otp_email(existing_user.email, otp_code)
+                send_otp_email(existing_user.email, otp_code)
             except Exception as e:
                 # Log error properly in production
                 print(e,"EEEEEEEEE")
@@ -129,11 +129,7 @@ async def signup(
     if existing_user and not existing_user.is_verified:
         otp_code = await store_otp(str(existing_user.id), purpose)
 
-        background_tasks.add_task(
-            send_otp_email,
-            existing_user.email,
-            otp_code,
-        )
+        send_otp_email(existing_user.email, otp_code)
 
         return {
             "message": "User already exists but not verified. OTP resent.",
