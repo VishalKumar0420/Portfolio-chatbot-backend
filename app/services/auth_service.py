@@ -18,7 +18,7 @@ from app.schemas.user import UserCreate, UserLogin
 from passlib.context import CryptContext
 from app.core.config.setting import get_settings
 from app.services.redis_otp import store_otp
-from app.services.mail_service import send_otp_email
+# from app.services.mail_service import send_otp_email
 from fastapi import BackgroundTasks
 
 settings = get_settings()
