@@ -17,8 +17,8 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
     status_code=status.HTTP_201_CREATED,
     operation_id="signup",
 )
-async def user_signup(data: UserCreate,background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    return await signup(db, data,background_tasks)
+async def user_signup(data: UserCreate,db: Session = Depends(get_db)):
+    return await signup(db, data)
 
 
 @router.post("/login", response_model=TokenResponse, status_code=status.HTTP_200_OK)
@@ -26,12 +26,6 @@ def user_login(data: UserLogin, db: Session = Depends(get_db)):
     return login(db, data)
 
 
-@router.post("/refresh")
+@router.post("/refresh",response_model=TokenResponse,operation_id="refresh token",status_code=status.HTTP_201_CREATED)
 def refresh(data: RefreshTokenRequest, db: Session = Depends(get_db)):
-    access_token, new_refresh_token = rotate_refresh_token(data.refresh_token, db)
-
-    return {
-        "access_token": access_token,
-        "refresh_token": new_refresh_token,
-        "token_type": "bearer",
-    }
+    return rotate_refresh_token(data.refresh_token, db)

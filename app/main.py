@@ -117,8 +117,11 @@
 # app.include_router(chat_router)
 
 
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.api.v1.health_check import router as heath_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.otp import router as otp_router
@@ -135,6 +138,60 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = []
+    print(exc)
+    for err in exc.errors():
+        # Invalid JSON body
+        if err["type"] == "json_invalid":
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "message": "Invalid JSON body. Please send a valid JSON request."
+                },
+            )
+
+        # Field validation errors
+        field_path = [str(loc) for loc in err["loc"] if loc != "body"]
+        field = ".".join(field_path)
+        errors.append(f"{field}: {err['msg']}")
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"message": errors},
+    )
+
+
+# --------------------------------------------------
+# Global Exception Handler (LAST)
+# --------------------------------------------------
+
+logging.basicConfig(level=logging.ERROR)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logging.error(f"Unhandled error: {exc}", exc_info=True)
+
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"message": "Internal server error. Please try again later."},
+    )
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    print(exc)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "message": exc.detail
+        }
+    )
+
 
 app.include_router(heath_router)
 app.include_router(auth_router)

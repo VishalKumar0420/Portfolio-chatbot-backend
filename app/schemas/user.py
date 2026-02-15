@@ -20,10 +20,12 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+
 class SignupResponse(BaseModel):
     message: str
     user_id: UUID
     email: EmailStr
+    status: bool
 
 
 class UserResponse(BaseModel):
