@@ -75,7 +75,7 @@ async def signup(
     # Generate OTP in Redis
     otp_code = await store_otp(str(new_user.id), purpose)
     try:
-        send_otp_email(existing_user.email, otp_code)
+        send_otp_email(new_user.email, otp_code)
     except Exception as e:
         logger.error(f"OTP send failed for {new_user.email}: {str(e)}")
         raise HTTPException(

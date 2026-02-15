@@ -21,7 +21,7 @@ async def send_otp(
     )
 
 
-@router.post("/verify", operation_id="verify-otp",response_model=OTPResponse)
+@router.post("/verify", operation_id="verify-otp",status_code=status.HTTP_200_OK)
 async def verify_otp_endpoint(
     email: EmailStr,
     otp_code: str,
