@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from sqlalchemy.orm import Session
 from fastapi import HTTPException,status
-from app.core.config.constants import OTP_PURPOSE_LOGIN, OTP_PURPOSE_SIGNUP
+from app.core.config.constants import OTP_PURPOSE_SIGNUP
 from app.models.user import User
 from app.core.config.security import (
     create_access_token,
@@ -14,7 +14,7 @@ from app.core.config.security import (
 from app.models import user
 from app.models.refresh_token import RefreshToken
 from app.schemas.token import TokenResponse
-from app.schemas.user import SignupFailed, SignupResponse, UserCreate, UserLogin
+from app.schemas.user import SignupResponse, UserCreate, UserLogin
 from passlib.context import CryptContext
 from app.core.config.setting import get_settings
 from app.services.redis_otp import store_otp

@@ -1,8 +1,7 @@
-from fastapi import HTTPException, status, BackgroundTasks
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
 from app.models.user import User
-from app.schemas.otp import OTP_Request
 from app.schemas.password import PasswordRequest, PasswordResetRequest
 from app.core.config.security import hash_password
 from app.services.mail_service import send_otp_email

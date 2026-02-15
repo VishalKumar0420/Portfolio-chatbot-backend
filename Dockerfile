@@ -25,9 +25,7 @@ COPY --from=builder /install /usr/local
 # Copy app source
 COPY . .
 
-# Optional documentation only
+
 EXPOSE 8000
 
-# --------- PRODUCTION CMD ----------
-# Uses Render / cloud injected $PORT
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT"]

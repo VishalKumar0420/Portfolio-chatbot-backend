@@ -1,6 +1,6 @@
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter,Depends
 from sqlalchemy.orm import Session
-from app.core.config.constants import OTP_PURPOSE_LOGIN, OTP_PURPOSE_SIGNUP, OTP_PURPOSE_VERIFICAION
+from app.core.config.constants import OTP_PURPOSE_SIGNUP
 from app.core.db.session import get_db
 from app.schemas.otp import OTP_Request, OTPResponse
 from fastapi import status

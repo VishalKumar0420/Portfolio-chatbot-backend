@@ -1,32 +1,10 @@
-import uuid
-from fastapi import BackgroundTasks, HTTPException, status
+from fastapi import HTTPException, status
 from app.core.config.constants import OTP_PURPOSE_SIGNUP
 from app.models.user import User
 from app.schemas.otp import OTP_Request, OTPResponse
 from app.services.mail_service import send_otp_email
 from app.services.redis_otp import store_otp, verify_otp
 from sqlalchemy.orm import Session
-
-
-# async def create_user_otp(request: OTP_Request, db: Session, purpose: str) -> str:
-#     user = db.query(User).filter(User.email == request.email).first()
-
-#     if not user:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail="User not found",
-#         )
-
-#     otp_code = await store_otp(str(user.id), purpose)
-#     try:
-#         send_otp_email(user.email, otp_code)
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=500,
-#             detail="Failed to send OTP email",
-#         )
-
-#     return {"message": "OTP sent successfully"}
 
 
 async def create_user_otp(request: OTP_Request, db: Session):

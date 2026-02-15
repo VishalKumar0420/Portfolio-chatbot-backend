@@ -1,11 +1,9 @@
 from fastapi import APIRouter,Depends,status
 from sqlalchemy.orm import Session
-
 from app.core.db.session import get_db
 from app.schemas.password import PasswordResetRequest
 from app.schemas.otp import OTP_Request, OTPResponse
 from app.services.password_service import forget_password, reset_password
-from fastapi import BackgroundTasks
 from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
 
 router = APIRouter(prefix="/password", tags=["PASSWORD"])
@@ -19,13 +17,11 @@ router = APIRouter(prefix="/password", tags=["PASSWORD"])
 )
 async def forget_user_password(
     request: OTP_Request,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     return await forget_password(
         request=request,
         db=db,
-        background_tasks=background_tasks,
         purpose=OTP_PURPOSE_PASSWORD_RESET,
     )
 
