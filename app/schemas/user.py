@@ -1,18 +1,25 @@
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from uuid import UUID
 from datetime import datetime
 
 
 class UserCreate(BaseModel):
-    full_name: str
+    full_name: str = Field(...,max_length=100)
     email: EmailStr
-    password: str
+    password: str = Field(...,max_length=50)
+
+    @field_validator("full_name")
+    @classmethod
+    def name_must_not_be_blank(cls, v: str) -> str:
+        if len(v.strip()) < 2:
+            raise ValueError("Full name must be at least 2 characters")
+        return v
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
-        if len(v) < 6:
-            raise ValueError("Password must be at least 6 characters long")
+        if len(v.strip()) < 6:
+            raise ValueError("Password must be at least 6 characters")
         return v
 
 
@@ -20,12 +27,15 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class SignUpData(BaseModel):
+    user_id: UUID
+    email: EmailStr
 
 class SignupResponse(BaseModel):
     message: str
-    user_id: UUID
-    email: EmailStr
-    status: bool
+    success: bool
+    data:SignUpData
+
 
 
 class UserResponse(BaseModel):

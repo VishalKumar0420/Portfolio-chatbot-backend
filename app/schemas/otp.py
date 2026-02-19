@@ -1,13 +1,12 @@
-from typing import Literal
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 from enum import Enum
 from uuid import UUID
+from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
 
 class OTPPurpose(str, Enum):
     signup = "signup"
     login = "login"
     reset_password = "reset_password"
-
 
 class OTP_Request(BaseModel):
     email: EmailStr

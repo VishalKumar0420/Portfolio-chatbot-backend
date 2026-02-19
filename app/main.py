@@ -28,33 +28,43 @@ logging.basicConfig(level=logging.ERROR)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    errors = []
-    print(exc)
+    errors = {}
+
     for err in exc.errors():
-        # Invalid JSON body
         if err["type"] == "json_invalid":
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={
-                    "message": "Invalid JSON body. Please send a valid JSON request."
+                    "success": False,
+                    "message": "Invalid JSON body. Please send a valid JSON request.",
                 },
             )
 
-        # Field validation errors
         field_path = [str(loc) for loc in err["loc"] if loc != "body"]
         field = ".".join(field_path)
-        errors.append(f"{field}: {err['msg']}")
+        message = err["msg"]
+
+        if "email" in field.lower():
+            message = "Invalid email address"
+        # ✅ Remove "Value error, " prefix
+        elif message.startswith("Value error, "):
+            message = message.replace("Value error, ", "", 1)
+        errors[field]=message
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-        content={"message": errors},
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "success": False,
+            "status": status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "message": "Validation failed",
+            "errors": errors,
+        },
     )
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logging.error(f"Unhandled error: {exc}", exc_info=True)
-
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"message": "Internal server error. Please try again later."},
@@ -63,7 +73,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
-    print(exc)
     return JSONResponse(
         status_code=exc.status_code, content={"success": False, "message": exc.detail}
     )

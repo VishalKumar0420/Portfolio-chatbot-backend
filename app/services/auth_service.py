@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from sqlalchemy.orm import Session
-from fastapi import HTTPException,status
+from fastapi import HTTPException, status
 from app.core.config.constants import OTP_PURPOSE_SIGNUP
 from app.models.user import User
 from app.core.config.security import (
@@ -14,7 +14,7 @@ from app.core.config.security import (
 from app.models import user
 from app.models.refresh_token import RefreshToken
 from app.schemas.token import TokenResponse
-from app.schemas.user import SignupResponse, UserCreate, UserLogin
+from app.schemas.user import SignUpData, SignupResponse, UserCreate, UserLogin
 from passlib.context import CryptContext
 from app.core.config.setting import get_settings
 from app.services.redis_otp import store_otp
@@ -60,7 +60,7 @@ async def signup(
                 status=True,
             )
 
-    # User does NOT exist → create new  
+    # User does NOT exist → create new
     new_user = User(
         full_name=data.full_name,
         email=data.email,
@@ -85,9 +85,11 @@ async def signup(
 
     return SignupResponse(
         message="Signup successful. OTP sent to email.",
-        user_id=new_user.id,
-        email=new_user.email,
-        status=True,
+        success=True,
+        data=SignUpData(
+            user_id=new_user.id,
+            email=new_user.email,
+        ),
     )
 
 
@@ -105,13 +107,7 @@ def login(db: Session, data: UserLogin) -> TokenResponse:
             detail="Email not verified. Please verify before login.",
         )
 
-    access_token, refresh_token = issue_tokens(str(user.id), user.email, db)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-    )
+    return issue_tokens(str(user.id), user.email, db)
 
 
 def issue_tokens(user_id: str, email: str, db: Session) -> TokenResponse:

@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
 from app.models.user import User
-from app.schemas.password import PasswordRequest, PasswordResetRequest
+from app.schemas.password import ForgetPasswordRequest, ForgetPasswordResponse, ResetPasswordRequest
 from app.core.config.security import hash_password
 from app.services.mail_service import send_otp_email
 from app.services.otp_rate_limit import check_otp_rate_limit
@@ -10,9 +10,9 @@ from app.services.redis_otp import store_otp, verify_otp
 
 
 async def forget_password(
-    request: PasswordRequest,
+    request: ForgetPasswordRequest,
     db: Session,
-    purpose=OTP_PURPOSE_PASSWORD_RESET,
+    purpose:str=OTP_PURPOSE_PASSWORD_RESET
 ):
     user = db.query(User).filter(User.email == request.email).first()
     if not user:
@@ -33,15 +33,19 @@ async def forget_password(
             detail="Failed to send OTP email",
         )
 
-    return {"message": "OTP sent successfully"}
+    return ForgetPasswordResponse(
+        message="OTP sent successfully",
+        user_id=user.id,
+        email=user.email
+    )
 
 
 async def reset_password(
-    data: PasswordResetRequest,
+    request: ResetPasswordRequest,
     db: Session,
-    purpose=OTP_PURPOSE_PASSWORD_RESET,
-):
-    user = db.query(User).filter(User.email == data.email).first()
+    purpose:str=OTP_PURPOSE_PASSWORD_RESET
+)->ForgetPasswordResponse:
+    user = db.query(User).filter(User.email == request.email).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -49,7 +53,7 @@ async def reset_password(
         )
 
     #  Verify OTP
-    is_valid = await verify_otp(str(user.id), purpose, data.otp_code)
+    is_valid = await verify_otp(str(user.id),request.otp_code,purpose)
 
     if not is_valid:
         raise HTTPException(
@@ -58,9 +62,13 @@ async def reset_password(
         )
 
     #  Hash new password
-    user.hashed_password = hash_password(data.new_password)
+    user.hashed_password = hash_password(request.new_password)
 
     db.commit()
     db.refresh(user)
 
-    return {"message": "Password reset successfully"}
+    return ForgetPasswordResponse(
+        message="Password reset successfully",
+        user_id=user.id,
+        email=user.email
+    )
