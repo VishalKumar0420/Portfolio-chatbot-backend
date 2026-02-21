@@ -55,9 +55,12 @@ async def signup(
                 )
             return SignupResponse(
                 message="Signup successful. OTP sent to email.",
-                user_id=existing_user.id,
-                email=existing_user.email,
                 status=True,
+                success=True,
+                data=SignUpData(
+                    user_id=existing_user.id,
+                    email=existing_user.email,
+                ),
             )
 
     # User does NOT exist → create new
