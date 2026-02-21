@@ -12,7 +12,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: Backend
+        working-directory: backend
 
     steps:
       - name: Checkout code
@@ -27,7 +27,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-v1-${{ hashFiles('Backend/requirements.txt') }}
+          key: pip-v1-${{ hashFiles('backend/requirements.txt') }}
 
       - name: Install dependencies
         run: |
