@@ -6,10 +6,10 @@ from app.core.db.session import get_db
 from app.models.user import User
 
 auth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-settings = get_settings()
 
 
 def get_current_user(token: str = Depends(auth_scheme), db=Depends(get_db)):
+    settings = get_settings()
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]

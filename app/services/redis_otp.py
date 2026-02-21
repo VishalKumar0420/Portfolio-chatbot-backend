@@ -30,6 +30,7 @@ async def store_otp(user_id: str, purpose: str) -> str:
 
 
 async def verify_otp(user_id: str, otp_code: str, purpose: str) -> bool:
+    redis_client =  ()
     key = f"otp:{purpose}:{user_id}"
     stored_otp = await redis_client.get(key)
 
