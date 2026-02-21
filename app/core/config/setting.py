@@ -14,7 +14,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     OTP_EXPIRE_MINUTES: int = 5
-    REDIS_URL: str
     BREVO_API_KEY:str
     FROM_EMAIL:str
 

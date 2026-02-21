@@ -7,11 +7,14 @@ from app.api.v1.health_check import router as heath_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.otp import router as otp_router
 from app.api.v1.password import router as password_router
+from app.core.db.session import init_db
 
 # from app.api.v1.chat import router as chat_router
 
 app = FastAPI(title="Portfolio Chatbot API")
-
+@app.on_event("startup")
+def startup():
+    init_db()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
