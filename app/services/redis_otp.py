@@ -1,7 +1,9 @@
 import random
-from app.core.config.redis import redis_client  # should be an async redis client in production
 from app.core.config.setting import get_settings
+from app.core.config.redis import get_redis_client
 from app.services.otp_rate_limit import check_otp_rate_limit
+
+redis_client = get_redis_client()
 
 
 def generate_otp() -> str:

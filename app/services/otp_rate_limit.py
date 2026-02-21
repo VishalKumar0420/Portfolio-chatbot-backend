@@ -1,6 +1,7 @@
-from app.core.config.redis import redis_client
-from fastapi import HTTPException,status
+from app.core.config.redis import get_settings
+from fastapi import HTTPException, status
 
+redis_client = get_settings
 MAX_OTP_PER_HOUR = 10
 RATE_LIMIT_WINDOW = 60 * 60  # seconds
 
@@ -18,4 +19,3 @@ async def check_otp_rate_limit(user_id: str, purpose: str):
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many OTP requests. Please try again later.",
         )
-
