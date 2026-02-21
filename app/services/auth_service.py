@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
+from app.core.config.setting import get_settings
 from fastapi import HTTPException, status
 from app.core.config.constants import OTP_PURPOSE_SIGNUP
 from app.models.user import User
@@ -104,9 +105,6 @@ def login(db: Session, data: UserLogin) -> TokenResponse:
 
 
 def issue_tokens(user_id: str, email: str, db: Session) -> TokenResponse:
-    # Load settings only when issuing tokens (runtime)
-    from app.core.config.setting import get_settings
-
     settings = get_settings()
 
     payload = {"sub": user_id, "email": email}

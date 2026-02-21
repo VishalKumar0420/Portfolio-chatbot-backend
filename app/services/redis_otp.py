@@ -3,8 +3,6 @@ from app.core.config.setting import get_settings
 from app.core.config.redis import get_redis_client
 from app.services.otp_rate_limit import check_otp_rate_limit
 
-redis_client = get_redis_client()
-
 
 def generate_otp() -> str:
     return str(random.randint(100000, 999999))
@@ -12,6 +10,11 @@ def generate_otp() -> str:
 
 async def store_otp(user_id: str, purpose: str) -> str:
     settings = get_settings()
+
+    if not settings.REDIS_URL:
+        raise RuntimeError("REDIS_URL is not set")
+
+    redis_client = get_redis_client()
     otp_ttl = (settings.OTP_EXPIRE_MINUTES or 5) * 60
 
     key = f"otp:{purpose}:{user_id}"
