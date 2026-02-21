@@ -1,14 +1,18 @@
 from app.core.config.setting import get_settings
 import requests
 
-settings = get_settings()
-
 
 def send_otp_email(email: str, otp: str):
+    settings = get_settings()
+
+    if not settings.BREVO_API_KEY or not settings.FROM_EMAIL:
+        raise RuntimeError("Email service not configured (BREVO_API_KEY or FROM_EMAIL missing)")
+
     url = "https://api.brevo.com/v3/smtp/email"
 
+    # Debug prints (optional) - remove in production
     print("Sending email to:", email)
-    print("Using API KEY:", settings.BREVO_API_KEY)
+    # DO NOT print secrets in real production logs
     print("Using FROM EMAIL:", settings.FROM_EMAIL)
 
     payload = {
@@ -31,8 +35,5 @@ def send_otp_email(email: str, otp: str):
 
     response = requests.post(url, json=payload, headers=headers)
 
-    print("Brevo Status Code:", response.status_code)
-    print("Brevo Response:", response.text)
-
-    if response.status_code != 201:
+    if response.status_code not in (200, 201):
         raise Exception(f"Email failed: {response.text}")

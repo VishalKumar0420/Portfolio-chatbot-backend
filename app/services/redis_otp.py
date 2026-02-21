@@ -1,10 +1,7 @@
 import random
-from app.core.config.redis import redis_client  # should be redis.asyncio.Redis
+from app.core.config.redis import redis_client  # should be an async redis client in production
 from app.core.config.setting import get_settings
 from app.services.otp_rate_limit import check_otp_rate_limit
-
-settings = get_settings()
-OTP_TTL_SECONDS = settings.OTP_EXPIRE_MINUTES * 60  # configurable TTL
 
 
 def generate_otp() -> str:
@@ -12,12 +9,14 @@ def generate_otp() -> str:
 
 
 async def store_otp(user_id: str, purpose: str) -> str:
+    settings = get_settings()
+    otp_ttl = (settings.OTP_EXPIRE_MINUTES or 5) * 60
 
     key = f"otp:{purpose}:{user_id}"
     otp = generate_otp()
 
     # store OTP in Redis with TTL
-    await redis_client.set(key, otp, ex=OTP_TTL_SECONDS)
+    await redis_client.set(key, otp, ex=otp_ttl)
 
     # Increment OTP request count for rate-limiting
     await check_otp_rate_limit(user_id, purpose)
@@ -32,13 +31,11 @@ async def verify_otp(user_id: str, otp_code: str, purpose: str) -> bool:
     if not stored_otp:
         return False
 
-    # Redis returns bytes in some clients, decode if needed
     if isinstance(stored_otp, bytes):
         stored_otp = stored_otp.decode()
 
     if stored_otp != otp_code:
         return False
 
-    # Delete after successful verification
     await redis_client.delete(key)
     return True

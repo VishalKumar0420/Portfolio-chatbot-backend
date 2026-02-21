@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 import logging
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -9,12 +10,16 @@ from app.api.v1.otp import router as otp_router
 from app.api.v1.password import router as password_router
 from app.core.db.session import init_db
 
-# from app.api.v1.chat import router as chat_router
 
-app = FastAPI(title="Portfolio Chatbot API")
-@app.on_event("startup")
-def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     init_db()
+    yield
+
+
+app = FastAPI(title="Portfolio Chatbot API", lifespan=lifespan)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,15 +29,10 @@ app.add_middleware(
 )
 logging.basicConfig(level=logging.ERROR)
 
-# --------------------------------------------------
-# Global Exception Handler
-# --------------------------------------------------
-
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     errors = {}
-
     for err in exc.errors():
         if err["type"] == "json_invalid":
             return JSONResponse(
@@ -49,10 +49,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
         if "email" in field.lower():
             message = "Invalid email address"
-        # ✅ Remove "Value error, " prefix
         elif message.startswith("Value error, "):
             message = message.replace("Value error, ", "", 1)
-        errors[field]=message
+        errors[field] = message
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
