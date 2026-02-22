@@ -12,7 +12,7 @@ from app.core.config.security import (
     verify_password,
 )
 from app.models.refresh_token import RefreshToken
-from app.schemas.token import TokenResponse
+from app.schemas.token import TokenData, TokenResponse
 from app.schemas.user import ResponseData, SignUpResponse, UserCreate, UserLogin
 from passlib.context import CryptContext
 from app.services.redis_otp import store_otp
@@ -52,9 +52,7 @@ async def signup(
                 status=True,
                 success=True,
                 data=ResponseData(
-                    user_id=existing_user.id,
-                    email=existing_user.email,
-                    success=True
+                    user_id=existing_user.id, email=existing_user.email, success=True
                 ),
             )
 
@@ -82,11 +80,7 @@ async def signup(
     return SignUpResponse(
         message="Signup successful. OTP sent to email.",
         success=True,
-        data=ResponseData(
-            user_id=new_user.id,
-            email=new_user.email,
-            success=True
-        ),
+        data=ResponseData(user_id=new_user.id, email=new_user.email, success=True),
     )
 
 
@@ -128,7 +122,13 @@ def issue_tokens(user_id: str, email: str, db: Session) -> TokenResponse:
     db.commit()
 
     return TokenResponse(
-        access_token=access_token, refresh_token=refresh_token, token_type="bearer"
+        message="Login Successfully",
+        data=TokenData(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            success=True,
+        ),
     )
 
 
