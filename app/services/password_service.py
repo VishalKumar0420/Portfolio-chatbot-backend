@@ -3,9 +3,10 @@ from pydantic import EmailStr
 from sqlalchemy.orm import Session
 from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
 from app.models.user import User
-from app.schemas.password import PasswordResponse, ResetPasswordRequest
+from app.schemas.common import APIResponse
+from app.schemas.password import ResetPasswordRequest
 from app.core.config.security import hash_password
-from app.schemas.user import ResponseData
+from app.schemas.common import UserData
 from app.services.mail_service import send_otp_email
 from app.services.otp_rate_limit import check_otp_rate_limit
 from app.services.redis_otp import store_otp, verify_otp
@@ -15,7 +16,7 @@ async def forget_password(
     email:EmailStr,
     db: Session,
     purpose:str=OTP_PURPOSE_PASSWORD_RESET
-):
+)->APIResponse[UserData]:
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(
@@ -40,10 +41,9 @@ async def forget_password(
             detail="Failed to send OTP email",
         )
 
-    return PasswordResponse(
+    return APIResponse(
         message="OTP sent successfully",
-        success=True,
-        data=ResponseData(
+        data=UserData(
             user_id=user.id,
             email=user.email,
         )
@@ -54,7 +54,7 @@ async def reset_password(
     request: ResetPasswordRequest,
     db: Session,
     purpose:str=OTP_PURPOSE_PASSWORD_RESET
-)->PasswordResponse:
+)->APIResponse[UserData]:
     user = db.query(User).filter(User.email == request.email).first()
     if not user:
         raise HTTPException(
@@ -77,10 +77,9 @@ async def reset_password(
     db.commit()
     db.refresh(user)
 
-    return PasswordResponse(
+    return APIResponse(
         message="Password reset successfully",
-        success=True,
-        data=ResponseData(
+        data=UserData(
             user_id=user.id,
             email=user.email,
         )

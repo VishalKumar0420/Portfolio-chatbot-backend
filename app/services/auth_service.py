@@ -12,8 +12,9 @@ from app.core.config.security import (
     verify_password,
 )
 from app.models.refresh_token import RefreshToken
-from app.schemas.token import TokenData, TokenResponse
-from app.schemas.user import ResponseData, SignUpResponse, UserCreate, UserLogin
+from app.schemas.token import TokenData
+from app.schemas.user import UserCreate, UserLogin
+from app.schemas.common import APIResponse,UserData
 from passlib.context import CryptContext
 from app.services.redis_otp import store_otp
 from app.services.mail_service import send_otp_email
@@ -28,7 +29,7 @@ async def signup(
     db: Session,
     data: UserCreate,
     purpose: str = OTP_PURPOSE_SIGNUP,
-) -> SignUpResponse:
+) -> APIResponse[UserData]:
     existing_user = db.query(User).filter(User.email == data.email).first()
 
     if existing_user:
@@ -47,10 +48,9 @@ async def signup(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to send the OTP",
                 )
-            return SignUpResponse(
+            return APIResponse(
                 message="Signup successful. OTP sent to email.",
-                success=True,
-                data=ResponseData(
+                data=UserData(
                     user_id=existing_user.id,
                     email=existing_user.email,
                 ),
@@ -77,17 +77,16 @@ async def signup(
             detail="Failed to send the OTP",
         )
 
-    return SignUpResponse(
+    return APIResponse(
         message="Signup successful. OTP sent to email.",
-        success=True,
-        data=ResponseData(
+        data=UserData(
             user_id=new_user.id,
             email=new_user.email,
         ),
     )
 
 
-def login(db: Session, data: UserLogin) -> TokenResponse:
+def login(db: Session, data: UserLogin) -> APIResponse[TokenData]:
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(
@@ -103,7 +102,7 @@ def login(db: Session, data: UserLogin) -> TokenResponse:
     return issue_tokens(str(user.id), user.email, db)
 
 
-def issue_tokens(user_id: str, email: str, db: Session) -> TokenResponse:
+def issue_tokens(user_id: str, email: str, db: Session) -> APIResponse[TokenData]:
     settings = get_settings()
 
     payload = {"sub": user_id, "email": email}
@@ -124,7 +123,7 @@ def issue_tokens(user_id: str, email: str, db: Session) -> TokenResponse:
     db.add(db_token)
     db.commit()
 
-    return TokenResponse(
+    return APIResponse(
         message="User login successfully",
         success=True,
         data=TokenData(
@@ -135,7 +134,7 @@ def issue_tokens(user_id: str, email: str, db: Session) -> TokenResponse:
     )
 
 
-def rotate_refresh_token(refresh_token: str, db: Session) -> TokenResponse:
+def rotate_refresh_token(refresh_token: str, db: Session) -> APIResponse[UserData]:
     payload = decode_token(refresh_token, "refresh")
 
     db_tokens = (

@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr
 from enum import Enum
-from app.schemas.user import ResponseData
 
 
 class OTPPurpose(str, Enum):
@@ -8,21 +7,12 @@ class OTPPurpose(str, Enum):
     login = "login"
     reset_password = "reset_password"
 
+
 class OTPRequest(BaseModel):
     email: EmailStr
     purpose: OTPPurpose
-
-class OTPResponse(BaseModel):
-    message: str
-    success: bool
-    data: ResponseData
 
 
 class VerifyOTPResquest(BaseModel):
     email: EmailStr
     otp_code: str
-
-
-class VerifyOTPResponse(BaseModel):
-    message: str
-    success: bool
