@@ -3,11 +3,9 @@ from pydantic import EmailStr
 from sqlalchemy.orm import Session
 from app.core.config.constants import OTP_PURPOSE_SIGNUP
 from app.core.db.session import get_db
+from app.schemas.common import APIResponse,UserData
 from app.schemas.otp import (
     OTPPurpose,
-    OTPRequest,
-    OTPResponse,
-    VerifyOTPResponse,
     VerifyOTPResquest,
 )
 from fastapi import status
@@ -19,7 +17,7 @@ router = APIRouter(prefix="/otp", tags=["OTP"])
 @router.post(
     "/send",
     operation_id="send-otp",
-    response_model=OTPResponse,
+    response_model=APIResponse[UserData],
     status_code=status.HTTP_200_OK,
 )
 async def send_otp(
@@ -37,7 +35,7 @@ async def send_otp(
 @router.post(
     "/verify",
     operation_id="verify-otp",
-    response_model=VerifyOTPResponse,
+    response_model=APIResponse,
     status_code=status.HTTP_200_OK,
 )
 async def verify_otp_endpoint(

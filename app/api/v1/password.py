@@ -3,10 +3,8 @@ from pydantic import EmailStr
 from sqlalchemy.orm import Session
 from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
 from app.core.db.session import get_db
-from app.schemas.password import (
-    PasswordResponse,
-    ResetPasswordRequest,
-)
+from app.schemas.common import APIResponse
+from app.schemas.password import ResetPasswordRequest
 from app.services.password_service import forget_password, reset_password
 
 router = APIRouter(prefix="/password", tags=["PASSWORD"])
@@ -14,22 +12,20 @@ router = APIRouter(prefix="/password", tags=["PASSWORD"])
 
 @router.post(
     "/forget",
-    response_model=PasswordResponse,
+    response_model=APIResponse,
     status_code=status.HTTP_200_OK,
     operation_id="forget_password",
 )
 async def forget_user_password(
-    email:EmailStr,
+    email: EmailStr,
     db: Session = Depends(get_db),
 ):
-    return await forget_password(
-        email,db=db,purpose=OTP_PURPOSE_PASSWORD_RESET
-    )
+    return await forget_password(email, db=db, purpose=OTP_PURPOSE_PASSWORD_RESET)
 
 
 @router.post(
     "/reset",
-    response_model=PasswordResponse,
+    response_model=APIResponse,
     operation_id="reset_password",
     status_code=status.HTTP_200_OK,
 )

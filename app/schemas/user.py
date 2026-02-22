@@ -1,7 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from uuid import UUID
-from datetime import datetime
-
 
 class UserCreate(BaseModel):
     full_name: str = Field(...,max_length=100)
@@ -27,21 +25,6 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class ResponseData(BaseModel):
-    user_id: UUID
-    email: EmailStr
-
-class SignUpResponse(BaseModel):
-    message: str
-    success:bool
-    data:ResponseData
 
 
-
-class UserResponse(BaseModel):
-    id: UUID
-    full_name: str
-    email: EmailStr
-
-    model_config = {"from_attributes": True}
 

@@ -2,20 +2,17 @@ from fastapi import HTTPException, status
 from pydantic import EmailStr
 from app.core.config.constants import OTP_PURPOSE_SIGNUP
 from app.models.user import User
-from app.schemas.user import ResponseData
-from app.schemas.otp import (
-    OTPPurpose,
-    OTPRequest,
-    OTPResponse,
-    VerifyOTPResponse,
-    VerifyOTPResquest,
-)
+from app.schemas.common import APIResponse
+from app.schemas.otp import OTPPurpose
+from app.schemas.common import UserData
 from app.services.mail_service import send_otp_email
 from app.services.redis_otp import store_otp, verify_otp
 from sqlalchemy.orm import Session
 
 
-async def create_user_otp(email:EmailStr,purpose:OTPPurpose, db: Session) -> OTPResponse:
+async def create_user_otp(
+    email: EmailStr, purpose: OTPPurpose, db: Session
+) -> APIResponse:
     user = db.query(User).filter(User.email == email).first()
 
     if not user:
@@ -40,10 +37,9 @@ async def create_user_otp(email:EmailStr,purpose:OTPPurpose, db: Session) -> OTP
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send  OTP",
         )
-    return OTPResponse(
+    return APIResponse(
         message="OTP sent succssfully",
-        success=True,
-        data=ResponseData(
+        data=UserData(
             user_id=user.id,
             email=user.email,
         ),
@@ -56,10 +52,10 @@ async def create_user_otp(email:EmailStr,purpose:OTPPurpose, db: Session) -> OTP
 
 
 async def verify_user_otp(
-    request: VerifyOTPResquest,
+    request: APIResponse,
     db: Session,
     purpose=OTP_PURPOSE_SIGNUP,
-) -> VerifyOTPResponse:
+) -> APIResponse:
     user = db.query(User).filter(User.email == request.email).first()
     if not user:
         raise HTTPException(
@@ -78,7 +74,4 @@ async def verify_user_otp(
         user.is_verified = True
         db.commit()
 
-    return VerifyOTPResponse(
-        message="OTP verified successfully", 
-        success=True
-    )
+    return APIResponse(message="OTP verified successfully", success=True)
