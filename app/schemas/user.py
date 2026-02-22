@@ -27,14 +27,14 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class SignUpData(BaseModel):
+class ResponseData(BaseModel):
     user_id: UUID
     email: EmailStr
+    success:bool
 
-class SignupResponse(BaseModel):
+class SignUpResponse(BaseModel):
     message: str
-    success: bool
-    data:SignUpData
+    data:ResponseData
 
 
 
@@ -44,3 +44,4 @@ class UserResponse(BaseModel):
     email: EmailStr
 
     model_config = {"from_attributes": True}
+

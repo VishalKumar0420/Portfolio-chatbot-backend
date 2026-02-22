@@ -3,7 +3,7 @@ from fastapi import status, Depends
 from sqlalchemy.orm import Session
 from app.core.db.session import get_db
 from app.schemas.token import RefreshTokenRequest, TokenResponse
-from app.schemas.user import SignupResponse, UserCreate, UserLogin
+from app.schemas.user import SignUpResponse, UserCreate, UserLogin
 from app.services.auth_service import login, rotate_refresh_token, signup
 
 
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post(
     "/signup",
-    response_model=SignupResponse,
+    response_model=SignUpResponse,
     status_code=status.HTTP_201_CREATED,
     operation_id="signup",
 )

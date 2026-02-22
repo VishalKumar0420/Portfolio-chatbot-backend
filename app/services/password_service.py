@@ -1,20 +1,22 @@
 from fastapi import HTTPException, status
+from pydantic import EmailStr
 from sqlalchemy.orm import Session
 from app.core.config.constants import OTP_PURPOSE_PASSWORD_RESET
 from app.models.user import User
-from app.schemas.password import ForgetPasswordRequest, ForgetPasswordResponse, ResetPasswordRequest
+from app.schemas.password import PasswordResponse, ResetPasswordRequest
 from app.core.config.security import hash_password
+from app.schemas.user import ResponseData
 from app.services.mail_service import send_otp_email
 from app.services.otp_rate_limit import check_otp_rate_limit
 from app.services.redis_otp import store_otp, verify_otp
 
 
 async def forget_password(
-    request: ForgetPasswordRequest,
+    email:EmailStr,
     db: Session,
     purpose:str=OTP_PURPOSE_PASSWORD_RESET
 ):
-    user = db.query(User).filter(User.email == request.email).first()
+    user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -33,10 +35,13 @@ async def forget_password(
             detail="Failed to send OTP email",
         )
 
-    return ForgetPasswordResponse(
+    return PasswordResponse(
         message="OTP sent successfully",
-        user_id=user.id,
-        email=user.email
+        data=ResponseData(
+            user_id=user.id,
+            email=user.email,
+            success=True
+        )
     )
 
 
@@ -44,7 +49,7 @@ async def reset_password(
     request: ResetPasswordRequest,
     db: Session,
     purpose:str=OTP_PURPOSE_PASSWORD_RESET
-)->ForgetPasswordResponse:
+)->PasswordResponse:
     user = db.query(User).filter(User.email == request.email).first()
     if not user:
         raise HTTPException(
@@ -67,8 +72,11 @@ async def reset_password(
     db.commit()
     db.refresh(user)
 
-    return ForgetPasswordResponse(
+    return PasswordResponse(
         message="Password reset successfully",
-        user_id=user.id,
-        email=user.email
+        data=ResponseData(
+            user_id=user.id,
+            email=user.email,
+            success=True
+        )
     )

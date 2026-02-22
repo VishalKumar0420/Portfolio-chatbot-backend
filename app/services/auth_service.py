@@ -13,7 +13,7 @@ from app.core.config.security import (
 )
 from app.models.refresh_token import RefreshToken
 from app.schemas.token import TokenResponse
-from app.schemas.user import SignUpData, SignupResponse, UserCreate, UserLogin
+from app.schemas.user import ResponseData, SignUpResponse, UserCreate, UserLogin
 from passlib.context import CryptContext
 from app.services.redis_otp import store_otp
 from app.services.mail_service import send_otp_email
@@ -28,7 +28,7 @@ async def signup(
     db: Session,
     data: UserCreate,
     purpose: str = OTP_PURPOSE_SIGNUP,
-) -> SignupResponse:
+) -> SignUpResponse:
     existing_user = db.query(User).filter(User.email == data.email).first()
 
     if existing_user:
@@ -47,13 +47,14 @@ async def signup(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to send the OTP",
                 )
-            return SignupResponse(
+            return SignUpResponse(
                 message="Signup successful. OTP sent to email.",
                 status=True,
                 success=True,
-                data=SignUpData(
+                data=ResponseData(
                     user_id=existing_user.id,
                     email=existing_user.email,
+                    success=True
                 ),
             )
 
@@ -78,12 +79,13 @@ async def signup(
             detail="Failed to send the OTP",
         )
 
-    return SignupResponse(
+    return SignUpResponse(
         message="Signup successful. OTP sent to email.",
         success=True,
-        data=SignUpData(
+        data=ResponseData(
             user_id=new_user.id,
             email=new_user.email,
+            success=True
         ),
     )
 

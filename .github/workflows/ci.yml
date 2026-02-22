@@ -1,4 +1,4 @@
-name: Backend CI
+name: Backend CI & Keep Alive
 
 on:
   push:
@@ -6,8 +6,18 @@ on:
   pull_request:
     branches: ["main"]
 
+  # ---------------------------
+  # Cron job
+  # ---------------------------
+  schedule:
+    - cron: "*/10 * * * *"
+
 jobs:
+  # ---------------------------
+  # CI JOB
+  # ---------------------------
   test:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
 
     steps:
@@ -31,4 +41,18 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run tests
-        run: python -m pytest
+        run: |
+          python -m pytest
+
+
+  # ---------------------------
+  # KEEP ALIVE JOB (cron )
+  # ---------------------------
+  keep_alive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Render health endpoint
+        run: |
+          curl -sSf https://portfolio-chatbot-eby9.onrender.com/docs/health || exit 1

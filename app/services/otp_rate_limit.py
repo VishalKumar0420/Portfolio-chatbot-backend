@@ -1,4 +1,4 @@
-from app.core.config.redis import get_settings
+from app.core.config.redis import get_redis_client
 from fastapi import HTTPException, status
 
 MAX_OTP_PER_HOUR = 10
@@ -6,7 +6,7 @@ RATE_LIMIT_WINDOW = 60 * 60  # seconds
 
 
 async def check_otp_rate_limit(user_id: str, purpose: str):
-    redis_client = get_settings()
+    redis_client = get_redis_client()
     key = f"otp_count:{purpose}:{user_id}"
     count = await redis_client.incr(key)
 

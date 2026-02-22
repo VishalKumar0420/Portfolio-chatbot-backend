@@ -1,13 +1,19 @@
 from fastapi import HTTPException, status
 from app.core.config.constants import OTP_PURPOSE_SIGNUP
 from app.models.user import User
-from app.schemas.otp import OTP_Request, OTPResponse
+from app.schemas.user import ResponseData
+from app.schemas.otp import (
+    OTPRequest,
+    OTPResponse,
+    VerifyOTPResponse,
+    VerifyOTPResquest,
+)
 from app.services.mail_service import send_otp_email
 from app.services.redis_otp import store_otp, verify_otp
 from sqlalchemy.orm import Session
 
 
-async def create_user_otp(request: OTP_Request, db: Session):
+async def create_user_otp(request: OTPRequest, db: Session) -> OTPResponse:
     user = db.query(User).filter(User.email == request.email).first()
 
     if not user:
@@ -34,7 +40,12 @@ async def create_user_otp(request: OTP_Request, db: Session):
             detail="Failed to send  OTP",
         )
     return OTPResponse(
-        message="OTP sent succssfully", user_id=user.id, email=user.email
+        message="OTP sent succssfully",
+        data=ResponseData(
+            user_id=user.id,
+            email=user.email,
+            success=True
+        ),
     )
 
 
@@ -44,19 +55,18 @@ async def create_user_otp(request: OTP_Request, db: Session):
 
 
 async def verify_user_otp(
-    email: str,
-    otp_code: str,
+    request: VerifyOTPResquest,
     db: Session,
     purpose=OTP_PURPOSE_SIGNUP,
-) -> bool:
-    user = db.query(User).filter(User.email == email).first()
+) -> VerifyOTPResponse:
+    user = db.query(User).filter(User.email == request.email).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
     #  verify OTP in Redis
-    is_valid = await verify_otp(str(user.id), otp_code, purpose)
+    is_valid = await verify_otp(str(user.id), request.otp_code, purpose)
 
     if not is_valid:
         raise HTTPException(
@@ -67,4 +77,7 @@ async def verify_user_otp(
         user.is_verified = True
         db.commit()
 
-    return {"message": "OTP verified successfully"}
+    return VerifyOTPResponse(
+        message="OTP verified successfully", 
+        success=True
+    )
