@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
+from pydantic import EmailStr
 from sqlalchemy.orm import Session
 from app.core.config.constants import OTP_PURPOSE_SIGNUP
 from app.core.db.session import get_db
 from app.schemas.otp import (
+    OTPPurpose,
     OTPRequest,
     OTPResponse,
     VerifyOTPResponse,
@@ -21,11 +23,13 @@ router = APIRouter(prefix="/otp", tags=["OTP"])
     status_code=status.HTTP_200_OK,
 )
 async def send_otp(
-    request: OTPRequest,
+    email: EmailStr,
+    purpose: OTPPurpose,
     db: Session = Depends(get_db),
 ):
     return await create_user_otp(
-        request=request,
+        email=email,
+        purpose=purpose,
         db=db,
     )
 

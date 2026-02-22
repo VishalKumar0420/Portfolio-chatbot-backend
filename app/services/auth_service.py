@@ -49,10 +49,10 @@ async def signup(
                 )
             return SignUpResponse(
                 message="Signup successful. OTP sent to email.",
-                status=True,
                 success=True,
                 data=ResponseData(
-                    user_id=existing_user.id, email=existing_user.email, success=True
+                    user_id=existing_user.id,
+                    email=existing_user.email,
                 ),
             )
 
@@ -80,7 +80,10 @@ async def signup(
     return SignUpResponse(
         message="Signup successful. OTP sent to email.",
         success=True,
-        data=ResponseData(user_id=new_user.id, email=new_user.email, success=True),
+        data=ResponseData(
+            user_id=new_user.id,
+            email=new_user.email,
+        ),
     )
 
 
@@ -122,12 +125,12 @@ def issue_tokens(user_id: str, email: str, db: Session) -> TokenResponse:
     db.commit()
 
     return TokenResponse(
-        message="Login Successfully",
+        message="User login successfully",
+        success=True,
         data=TokenData(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
-            success=True,
         ),
     )
 

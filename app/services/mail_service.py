@@ -6,14 +6,11 @@ def send_otp_email(email: str, otp: str):
     settings = get_settings()
 
     if not settings.BREVO_API_KEY or not settings.FROM_EMAIL:
-        raise RuntimeError("Email service not configured (BREVO_API_KEY or FROM_EMAIL missing)")
+        raise RuntimeError(
+            "Email service not configured (BREVO_API_KEY or FROM_EMAIL missing)"
+        )
 
     url = "https://api.brevo.com/v3/smtp/email"
-
-    # Debug prints (optional) - remove in production
-    print("Sending email to:", email)
-    # DO NOT print secrets in real production logs
-    print("Using FROM EMAIL:", settings.FROM_EMAIL)
 
     payload = {
         "sender": {"email": settings.FROM_EMAIL},

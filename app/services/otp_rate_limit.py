@@ -2,7 +2,7 @@ from app.core.config.redis import get_redis_client
 from fastapi import HTTPException, status
 
 MAX_OTP_PER_HOUR = 10
-RATE_LIMIT_WINDOW = 60 * 60  # seconds
+RATE_LIMIT_WINDOW = 60 * 60  # in seconds
 
 
 async def check_otp_rate_limit(user_id: str, purpose: str):

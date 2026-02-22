@@ -1,8 +1,10 @@
 from fastapi import HTTPException, status
+from pydantic import EmailStr
 from app.core.config.constants import OTP_PURPOSE_SIGNUP
 from app.models.user import User
 from app.schemas.user import ResponseData
 from app.schemas.otp import (
+    OTPPurpose,
     OTPRequest,
     OTPResponse,
     VerifyOTPResponse,
@@ -13,25 +15,24 @@ from app.services.redis_otp import store_otp, verify_otp
 from sqlalchemy.orm import Session
 
 
-async def create_user_otp(request: OTPRequest, db: Session) -> OTPResponse:
-    user = db.query(User).filter(User.email == request.email).first()
+async def create_user_otp(email:EmailStr,purpose:OTPPurpose, db: Session) -> OTPResponse:
+    user = db.query(User).filter(User.email == email).first()
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User Not Found"
         )
 
-    if request.purpose == "signup" and user.is_verified:
+    if purpose == "signup" and user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="User already exists"
         )
-    if request.purpose in ("login", "reset_password") and not user.is_verified:
+    if purpose in ("login", "reset_password") and not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="User not verified"
         )
 
-    otp_code = await store_otp(str(user.id), purpose=request.purpose)
-
+    otp_code = await store_otp(str(user.id), purpose=purpose)
     try:
         send_otp_email(user.email, otp_code)
     except Exception as e:
@@ -41,10 +42,10 @@ async def create_user_otp(request: OTPRequest, db: Session) -> OTPResponse:
         )
     return OTPResponse(
         message="OTP sent succssfully",
+        success=True,
         data=ResponseData(
             user_id=user.id,
             email=user.email,
-            success=True
         ),
     )
 

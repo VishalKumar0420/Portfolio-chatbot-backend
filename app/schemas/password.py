@@ -11,4 +11,5 @@ class ResetPasswordRequest(BaseModel):
 
 class PasswordResponse(BaseModel):
     message: str
+    success:bool
     data:ResponseData

@@ -30,10 +30,10 @@ class UserLogin(BaseModel):
 class ResponseData(BaseModel):
     user_id: UUID
     email: EmailStr
-    success:bool
 
 class SignUpResponse(BaseModel):
     message: str
+    success:bool
     data:ResponseData
 
 
