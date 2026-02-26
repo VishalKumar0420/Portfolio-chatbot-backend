@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from app.core.config.setting import get_settings
 from fastapi import HTTPException, status
 from app.core.config.constants import OTP_PURPOSE_SIGNUP
-from app.models.user import User
 from app.core.config.security import (
     create_access_token,
     create_refresh_token,
@@ -11,16 +10,13 @@ from app.core.config.security import (
     hash_password,
     verify_password,
 )
-from app.models.refresh_token import RefreshToken
-from app.schemas.token import TokenData
-from app.schemas.user import UserCreate, UserLogin
-from app.schemas.common import APIResponse,UserData
+from app.db.models.refresh_token import RefreshToken
+from app.db.models.user import User
+from app.schemas import UserCreate,APIResponse,UserData,UserLogin,TokenResponse
 from passlib.context import CryptContext
 from app.services.redis_otp import store_otp
 from app.services.mail_service import send_otp_email
-import logging
 
-logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
@@ -43,8 +39,7 @@ async def signup(
             try:
                 send_otp_email(existing_user.email, otp_code)
             except Exception:
-                logger.exception(f"OTP send failed for {existing_user.email}")
-                raise HTTPException(
+                    raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to send the OTP",
                 )
@@ -71,7 +66,6 @@ async def signup(
     try:
         send_otp_email(new_user.email, otp_code)
     except Exception as e:
-        logger.error(f"OTP send failed for {new_user.email}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send the OTP",
@@ -86,7 +80,7 @@ async def signup(
     )
 
 
-def login(db: Session, data: UserLogin) -> APIResponse[TokenData]:
+def login(db: Session, data: UserLogin) -> APIResponse[TokenResponse]:
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(
@@ -102,7 +96,7 @@ def login(db: Session, data: UserLogin) -> APIResponse[TokenData]:
     return issue_tokens(str(user.id), user.email, db)
 
 
-def issue_tokens(user_id: str, email: str, db: Session) -> APIResponse[TokenData]:
+def issue_tokens(user_id: str, email: str, db: Session) -> APIResponse[TokenResponse]:
     settings = get_settings()
 
     payload = {"sub": user_id, "email": email}
@@ -126,7 +120,7 @@ def issue_tokens(user_id: str, email: str, db: Session) -> APIResponse[TokenData
     return APIResponse(
         message="User login successfully",
         success=True,
-        data=TokenData(
+        data=TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
@@ -134,7 +128,7 @@ def issue_tokens(user_id: str, email: str, db: Session) -> APIResponse[TokenData
     )
 
 
-def rotate_refresh_token(refresh_token: str, db: Session) -> APIResponse[UserData]:
+def rotate_refresh_token(refresh_token: str, db: Session) -> APIResponse[TokenResponse]:
     payload = decode_token(refresh_token, "refresh")
 
     db_tokens = (

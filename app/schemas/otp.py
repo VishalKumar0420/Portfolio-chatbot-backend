@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from enum import Enum
 
 
@@ -8,11 +8,12 @@ class OTPPurpose(str, Enum):
     reset_password = "reset_password"
 
 
-class OTPRequest(BaseModel):
+class SendOTPRequest(BaseModel):
     email: EmailStr
     purpose: OTPPurpose
 
 
-class VerifyOTPResquest(BaseModel):
+class VerifyOTPRequest(BaseModel):
     email: EmailStr
-    otp_code: str
+    otp_code: str = Field(min_length=6, max_length=6)
+    purpose: OTPPurpose

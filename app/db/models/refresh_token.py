@@ -3,7 +3,7 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.core.db.base import Base
+from app.db.base import Base
 
 
 class RefreshToken(Base):
@@ -23,7 +23,12 @@ class RefreshToken(Base):
         index=True,
     )
 
-    token = Column(String(255), unique=True, nullable=False)
+    token = Column(
+        String(512),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
 
     is_revoked = Column(
         Boolean,

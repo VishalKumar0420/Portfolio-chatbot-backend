@@ -1,14 +1,8 @@
-from fastapi import APIRouter, Depends
-from pydantic import EmailStr
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from app.core.config.constants import OTP_PURPOSE_SIGNUP
-from app.core.db.session import get_db
-from app.schemas.common import APIResponse,UserData
-from app.schemas.otp import (
-    OTPPurpose,
-    VerifyOTPResquest,
-)
-from fastapi import status
+from app.db.session import get_db
+from app.schemas import APIResponse, UserData
+from app.schemas.otp import OTPPurpose, SendOTPRequest, VerifyOTPRequest
 from app.services.otp_service import create_user_otp, verify_user_otp
 
 router = APIRouter(prefix="/otp", tags=["OTP"])
@@ -16,33 +10,36 @@ router = APIRouter(prefix="/otp", tags=["OTP"])
 
 @router.post(
     "/send",
-    operation_id="send-otp",
     response_model=APIResponse[UserData],
     status_code=status.HTTP_200_OK,
+    operation_id="send_otp",
 )
 async def send_otp(
-    email: EmailStr,
-    purpose: OTPPurpose,
+    request: SendOTPRequest,
     db: Session = Depends(get_db),
 ):
     return await create_user_otp(
-        email=email,
-        purpose=purpose,
+        email=request.email,
+        purpose=request.purpose,
         db=db,
     )
 
 
 @router.post(
     "/verify",
-    operation_id="verify-otp",
     response_model=APIResponse,
     status_code=status.HTTP_200_OK,
+    operation_id="verify_otp",
 )
-async def verify_otp_endpoint(
-    request: VerifyOTPResquest,
+async def verify_otp(
+    request: VerifyOTPRequest,
     db: Session = Depends(get_db),
 ):
-    return await verify_user_otp(request=request, db=db, purpose=OTP_PURPOSE_SIGNUP)
+    return await verify_user_otp(
+        request=request,
+        db=db,
+        purpose=request.purpose,
+    )
 
 
 # @router.post("/resend", operation_id="resend-otp")
