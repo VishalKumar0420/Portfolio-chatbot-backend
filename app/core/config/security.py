@@ -54,9 +54,10 @@ def decode_token(token: str, expected_type: str) -> dict:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
+        
 
-        if payload.get("type") != expected_type:
-            raise HTTPException(status_code=401, detail="Invalid token type")
+        # if payload.get("type") != expected_type:
+        #     raise HTTPException(status_code=401, detail="Invalid token type")
 
         return payload
 

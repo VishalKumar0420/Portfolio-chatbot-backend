@@ -8,6 +8,7 @@ from app.api.v1.health_check import router as heath_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.otp import router as otp_router
 from app.api.v1.password import router as password_router
+<<<<<<< HEAD
 from app.core.db.session import init_db
 
 
@@ -19,7 +20,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Portfolio Chatbot API", lifespan=lifespan)
 
+=======
+from app.api.v1.chat import router as chat_router
+from app.api.v1.resume import router as resume_router
+from app.core.db.base import Base
+from app.core.db.session import engine
+# from app.api.v1.chat import router as chat_router
 
+from app.models.user import User
+from app.models.chat import Chat
+>>>>>>> 196e0bc (added resume parser and updated chat routes)
+
+
+app = FastAPI(title="Portfolio Chatbot API")
+Base.metadata.create_all(bind=engine)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,6 +41,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+<<<<<<< HEAD
 logging.basicConfig(level=logging.ERROR)
 
 
@@ -80,8 +95,12 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
+=======
+>>>>>>> 196e0bc (added resume parser and updated chat routes)
 app.include_router(heath_router)
 app.include_router(auth_router)
 app.include_router(otp_router)
 app.include_router(password_router)
+app.include_router(chat_router)
+app.include_router(resume_router)
 # app.include_router(chat_router)

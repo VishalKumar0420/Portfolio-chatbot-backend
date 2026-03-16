@@ -1,28 +1,65 @@
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from app.shares import call_groq_llm, detect_sections, normalize_text, preprocess_query, split_large_section
+
+from app.shares.call_groq_llm import call_groq_llm
+from app.shares.detect_sections import detect_sections
+from app.shares.normalize_text import normalize_text
+from app.shares.preprocess_query import preprocess_query
 from data import TOP_K, VECTOR_K
 from app.core.vectorstore.pinecone_store import _vectorstore
+from app.models.chat import Chat
+from sqlalchemy.orm import Session
+from app.core.vectorstore.pinecone_store import get_vectorstore
+import uuid
+from pydantic import BaseModel
 
-
-
-# Delete all data for a specific chat_id from vector store
-def delete_chat_content(chat_id: str):
+def add_chat_db(db: Session, chat_id: str, user_id: str, chat_name: str, content: dict):
     try:
-        from app.core.vectorstore.pinecone_store import index
+        existing_chat = db.query(Chat).filter(Chat.chat_id == uuid.UUID(chat_id)).first()
+        
 
+        if existing_chat:
+            existing_chat.chat_name = chat_name
+            existing_chat.chat_content = content.model_dump()
+
+        else:
+            new_chat = Chat(
+                chat_id=chat_id,
+                user_id=user_id,
+                chat_name=chat_name,
+                chat_content=content.model_dump()
+            )
+            db.add(new_chat)
+
+        db.commit()
+
+        
+
+    except Exception as e:
+        
+        db.rollback()
+        raise e
+
+
+def delete_chat_content(chat_id: str):
+    """Delete all data for a specific chat_id from vector store"""
+    try:
+        # For Pinecone, we need to use the delete method with filter
+        # First, let's try to get the index directly and delete by filter
+        from src.config.pinecone import index
+        
         # Delete all vectors with this chat_id using filter
         delete_response = index.delete(filter={"chat_id": chat_id})
-        print(f"Pinecone delete response: {delete_response}")
-        print(f"Attempted to delete all data for chat_id: {chat_id}")
-
-    # Fallback method - try to get documents and delete by IDs
+        
+        
     except Exception as e:
-        print(f"Error deleting chat content for {chat_id}: {e}")
+        
+        # Fallback method - try to get documents and delete by IDs
         try:
             results = _vectorstore.similarity_search(
-                query="dummy", k=1000, filter={"chat_id": chat_id}
+                query="dummy",
+                k=1000,
+                filter={"chat_id": chat_id}
             )
-
+            
             if results:
                 # Extract IDs and delete
                 ids_to_delete = []
@@ -32,61 +69,74 @@ def delete_chat_content(chat_id: str):
                     chunk_index = doc.metadata.get("chunk_index", 0)
                     doc_id = f"{chat_id}_{section}_{block_index}_{chunk_index}"
                     ids_to_delete.append(doc_id)
-
+                
                 if ids_to_delete:
-                    _vectorstore.delete(ids_to_delete)
-                    print(
-                        f"Fallback: Deleted {len(ids_to_delete)} documents for chat_id: {chat_id}"
-                    )
-            else:
-                print(f"No documents found for chat_id: {chat_id}")
-
+                    vectorstore.delete(ids_to_delete)
+            
+                
         except Exception as fallback_error:
             print(f"Fallback delete also failed: {fallback_error}")
 
+def add_chat_content(chat_id: str, content: dict):
+    vectorstore = get_vectorstore()
 
-# First, delete existing data for this chat_id if it exists
-def add_chat_content(chat_id: str, chat_name: str, content: dict):
-    print(f"Checking for existing data for chat_id: {chat_id}")
+    if isinstance(content, BaseModel):
+        content = content.model_dump()
+
     delete_chat_content(chat_id)
-
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500, chunk_overlap=100, separators=["\n\n", "\n", ".", " ", ""]
-    )
 
     texts, metadatas, ids = [], [], []
 
-    for section, text in content.items():
-        if not text or not text.strip():
+    for section, value in content.items():
+        if not value:
             continue
 
-        text = normalize_text(text)
+        if isinstance(value, str):
+            texts.append(normalize_text(value))
+            ids.append(f"{chat_id}_{section}_0")
+            metadatas.append({
+                "chat_id": chat_id,
+                "section": section
+            })
 
-        sub_blocks = split_large_section(text) if len(text) > 1000 else [text]
+        elif isinstance(value, list):
+            for idx, item in enumerate(value):
 
-        for block_index, block in enumerate(sub_blocks):
-            chunks = splitter.split_text(block)
-
-            for chunk_index, chunk in enumerate(chunks):
-                texts.append(chunk)
-                ids.append(f"{chat_id}_{section}_{block_index}_{chunk_index}")
-                metadatas.append(
-                    {
+                if isinstance(item, str):
+                    texts.append(normalize_text(item))
+                    ids.append(f"{chat_id}_{section}_{idx}")
+                    metadatas.append({
                         "chat_id": chat_id,
-                        "chat_name": chat_name,
                         "section": section,
-                        "block_index": block_index,
-                        "chunk_index": chunk_index,
-                    }
-                )
+                        "index": idx
+                    })
+
+                elif isinstance(item, (dict, BaseModel)):
+                    item_dict = (
+                        item.model_dump(exclude_none=True)
+                        if isinstance(item, BaseModel)
+                        else item
+                    )
+
+                    text = " ".join(
+                        f"{k}: {v}"
+                        for k, v in item_dict.items()
+                        if isinstance(v, (str, int, bool))
+                    )
+
+                    if not text.strip():
+                        continue
+
+                    texts.append(normalize_text(text))
+                    ids.append(f"{chat_id}_{section}_{idx}")
+                    metadatas.append({
+                        "chat_id": chat_id,
+                        "section": section,
+                        "index": idx
+                    })
 
     if texts:
-        _vectorstore.add_texts(texts, metadatas, ids)
-        print(f"Added {len(texts)} new chunks for chat_id: {chat_id}")
-    else:
-        print(f"No valid content to add for chat_id: {chat_id}")
-
-
+        vectorstore.add_texts(texts=texts, metadatas=metadatas, ids=ids)
 def search_chat_content(chat_id: str, query: str):
     processed_query_text = preprocess_query(query)
 

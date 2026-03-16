@@ -9,13 +9,7 @@ from app.core.db.base import Base
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        index=True,
-        nullable=False,
-    )
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
@@ -39,6 +33,11 @@ class User(Base):
         "RefreshToken",
         back_populates="user",
         cascade="all, delete",
+    )
+    chat = relationship(
+        "Chat",
+        back_populates="user",
+        cascade="all, delete"
     )
     # profile = relationship(
     #     "Profile",
