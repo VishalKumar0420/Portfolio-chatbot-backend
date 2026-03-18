@@ -37,7 +37,9 @@ def save_chat(
         HTTPException 500: On any database error.
     """
     try:
-        existing = db.query(Chat).filter(Chat.chat_id == uuid.UUID(chat_id)).first()
+        chat_uuid = uuid.UUID(chat_id)
+
+        existing = db.query(Chat).filter(Chat.chat_id == chat_uuid).first()
 
         if existing:
             existing.chat_name = chat_name
@@ -45,10 +47,10 @@ def save_chat(
         else:
             db.add(
                 Chat(
-                    chat_id=chat_id,
+                    chat_id=chat_uuid,
                     user_id=user_id,
                     chat_name=chat_name,
-                    chat_content=content.model_dump(),
+                    chat_content= content.model_dump(),
                 )
             )
 

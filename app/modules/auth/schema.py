@@ -8,7 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-
+from app.modules.resume.schema import ResumeData
 # ── User ──────────────────────────────────────────────────────────────────────
 
 class UserSignupRequest(BaseModel):
@@ -45,6 +45,24 @@ class UserResponse(BaseModel):
 
     user_id: UUID
     email: EmailStr
+
+class ChatSummary(BaseModel):
+    """Single chat entry in user profile."""
+
+    chat_id: str
+    chat_name: str
+    chat_content: ResumeData | None
+
+
+class UserProfileResoponse(BaseModel):
+    """User info + User Profile data"""
+
+    full_name: str
+    email: str
+    profileData: ChatSummary | None
+
+class UserProfileRequest(BaseModel):
+    refresh_token:str
 
 
 # ── Token ─────────────────────────────────────────────────────────────────────

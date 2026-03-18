@@ -52,7 +52,6 @@ async def add_chat(
         "and returns an AI-generated answer with matched context chunks."
     ),
     operation_id="search_chat",
-    openapi_extra={"security": _BEARER_SECURITY},
 )
 async def search_chat(
     data: SearchChatRequest

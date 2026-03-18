@@ -38,6 +38,12 @@ def handle_login(data: UserLoginRequest, db: Session) -> APIResponse[TokenRespon
     tokens = service.login(db=db, email=data.email, password=data.password)
     return APIResponse(message="Login successful", data=tokens)
 
+async def handle_user_profile(
+     db: Session,user_id
+) -> APIResponse:
+    """Handle User Profile"""
+    data = service.user_profile_data(db=db, user_id=user_id)
+    return APIResponse(message="User Data Fetch Successfully",data=data)
 
 def handle_refresh_token(data: RefreshTokenRequest, db: Session) -> APIResponse[TokenResponse]:
     """Handle refresh token rotation and return a new token pair."""

@@ -20,9 +20,11 @@ from app.modules.auth.schema import (
     UserSignupRequest,
     UserLoginRequest,
     VerifyOTPRequest,
+    UserProfileResoponse
 )
 from app.schemas.response import APIResponse
-
+from app.middleware.auth import verify_token
+_BEARER_SECURITY = [{"BearerAuth": []}]
 # ── Auth ──────────────────────────────────────────────────────────────────────
 auth_router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -46,11 +48,25 @@ async def signup(data: UserSignupRequest, db: Session = Depends(get_db)):
     status_code=status.HTTP_200_OK,
     summary="Login with email and password",
     description="Authenticates the user and returns a JWT access token and refresh token.",
-    operation_id="login",
+    operation_id="login"
 )
 def login(data: UserLoginRequest, db: Session = Depends(get_db)):
     """Authenticate and return token pair."""
     return controller.handle_login(data=data, db=db)
+
+
+@auth_router.get(
+    "/profile",
+    response_model=APIResponse[UserProfileResoponse],
+    status_code=status.HTTP_200_OK,
+    summary="User data & Profile data",
+    description="Verify User data based on that fetch profile data",
+    operation_id="get_profile",
+    openapi_extra={"security": _BEARER_SECURITY},
+)
+async def get_profile(db: Session = Depends(get_db),user_id: str = Depends(verify_token)):
+    """Get User Profile"""
+    return await controller.handle_user_profile(db=db,user_id=user_id)
 
 
 @auth_router.post(

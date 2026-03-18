@@ -32,7 +32,10 @@ from app.modules.auth.schema import (
     UserResponse,
     UserSignupRequest,
     VerifyOTPRequest,
+    UserProfileResoponse
 )
+from app.modules.chat.model import Chat
+from app.modules.auth.schema import ChatSummary
 
 logger = logging.getLogger(__name__)
 
@@ -261,6 +264,37 @@ def login(db: Session, email: str, password: str) -> TokenResponse:
         )
 
     return _issue_tokens(str(user.id), user.email, db)
+
+
+def user_profile_data(db: Session, user_id: str) -> UserProfileResoponse:
+    """
+    Fetch user email, full name, and all their chats (id, name, content).
+
+    Raises:
+        HTTPException 404: User not found.
+    """
+    
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    chat = db.query(Chat).filter(Chat.user_id == user_id).first()
+
+
+    return UserProfileResoponse(
+        full_name=user.full_name,
+        email=user.email,
+        profileData=
+            ChatSummary(
+                chat_id=str(chat.chat_id),
+                chat_name=chat.chat_name,
+                chat_content=chat.chat_content,
+            )
+            if chat else None
+    )
+
+
 
 
 def rotate_refresh_token(refresh_token: str, db: Session) -> TokenResponse:

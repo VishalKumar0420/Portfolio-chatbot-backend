@@ -30,7 +30,6 @@ _BEARER_SECURITY = [{"BearerAuth": []}]
 )
 async def parse_resume(
     file: UploadFile = File(..., description="Resume file — PDF or DOCX, max 10 MB"),
-    user_id: str = Depends(verify_token),
 ):
     """Upload a resume and receive structured JSON extracted by the LLM."""
     return await controller.handle_parse_resume(file=file)
