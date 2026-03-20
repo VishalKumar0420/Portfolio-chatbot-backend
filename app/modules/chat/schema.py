@@ -19,7 +19,7 @@ class SearchChatRequest(BaseModel):
     """Request body for POST /chat/search."""
 
     chat_id: constr(min_length=3, max_length=50) = Field(..., description="Chat session ID to search within")  # type: ignore
-    query: constr(min_length=3) = Field(..., description="Natural-language query")  # type: ignore
+    query: constr(min_length=0) = Field(..., description="Natural-language query")  # type: ignore
 
 
 class DeleteChatRequest(BaseModel):
