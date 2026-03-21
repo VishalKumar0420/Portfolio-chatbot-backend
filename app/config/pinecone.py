@@ -7,14 +7,11 @@ _INDEX_NAME = "portfolio-chatbot-package"
 _vectorstore = None
 
 
-# 🔥 Custom Embeddings class (API based)
-class HFAPIEmbeddings:
+# 🔥 Google Embeddings (Gemini API)
+class GoogleEmbedding:
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.api_url = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
-        self.headers = {
-            "Authorization": f"Bearer {self.api_key}"
-        }
+        self.url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent"
 
     def embed_documents(self, texts):
         return [self._embed(text) for text in texts]
@@ -24,19 +21,27 @@ class HFAPIEmbeddings:
 
     def _embed(self, text):
         response = requests.post(
-            self.api_url,
-            headers=self.headers,
-            json={"inputs": text},
+            f"{self.url}?key={self.api_key}",
+            json={
+                "content": {
+                    "parts": [{"text": text}]
+                }
+            },
             timeout=30
         )
+
         response.raise_for_status()
-        return response.json()
+
+        data = response.json()
+
+        # ✅ IMPORTANT: extract correct vector
+        return data["embedding"]["values"]
 
 
 def init_vectorstore():
     global _vectorstore
 
-    print("🚀 Initializing vectorstore...")
+    print("🚀 Initializing vectorstore (Google API)...")
 
     settings = get_settings()
 
@@ -44,8 +49,8 @@ def init_vectorstore():
     pc = Pinecone(api_key=settings.PINECONE_API_KEY)
     index = pc.Index(_INDEX_NAME)
 
-    # ✅ HF API embeddings (NO local model load)
-    embeddings = HFAPIEmbeddings(settings.HF_TOKEN)
+    # ✅ Google embeddings
+    embeddings = GoogleEmbedding(settings.GOOGLE_API_KEY)
 
     _vectorstore = PineconeVectorStore(
         index=index,
@@ -53,7 +58,7 @@ def init_vectorstore():
         text_key="text",
     )
 
-    print("✅ Vectorstore ready (API mode)")
+    print("✅ Vectorstore ready (Google Embedding API)")
 
 
 def get_vectorstore():
