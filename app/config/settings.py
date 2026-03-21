@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     # AI
     PINECONE_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
+    HF_TOKEN: Optional[str] = None
 
     FRONTEND_URL:Optional[str] = None
 
