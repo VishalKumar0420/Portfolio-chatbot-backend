@@ -21,6 +21,7 @@ from app.modules.health.router import router as health_router
 from app.modules.resume.router import router as resume_router
 from app.schemas.response import error_response, validation_response
 
+from app.config.pinecone import init_vectorstore
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Initialise the database on startup."""
     init_db()
+    init_vectorstore()
     yield
 
 
@@ -54,7 +56,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+# @app.on_event("startup")
+# async def startup_event():
+#     init_vectorstore()
 # ── Exception handlers ────────────────────────────────────────────────────────
 
 @app.exception_handler(RequestValidationError)
